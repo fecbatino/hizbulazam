@@ -1,0 +1,51 @@
+
+import React from 'react';
+
+interface DaySelectorModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSelectDay: (index: number) => void;
+    days: string[];
+    currentIndex: number;
+}
+
+export const DaySelectorModal: React.FC<DaySelectorModalProps> = ({ isOpen, onClose, onSelectDay, days, currentIndex }) => {
+    if (!isOpen) {
+        return null;
+    }
+
+    return (
+        <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300" 
+            onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="day-selector-title"
+        >
+            <div 
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 w-full max-w-xs" 
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h3 id="day-selector-title" className="font-bold text-lg mb-4 text-slate-800 dark:text-slate-100 text-center">
+                    Select a Day
+                </h3>
+                <ul className="space-y-2">
+                    {days.map((day, index) => (
+                        <li key={index}>
+                            <button 
+                                onClick={() => onSelectDay(index)} 
+                                className={`w-full text-left p-3 rounded-lg font-semibold transition-colors duration-200 ${
+                                    currentIndex === index 
+                                    ? 'bg-teal-100 text-teal-800 dark:bg-teal-500/20 dark:text-teal-300' 
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                }`}
+                            >
+                                {day}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </div>
+    );
+};

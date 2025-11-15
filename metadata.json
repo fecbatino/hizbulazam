@@ -1,0 +1,5 @@
+{
+  "name": "Daily Dua - Hizbul Azam",
+  "description": "A modern, offline-first application for daily supplications (Duas). It provides daily prayers from Saturday to Friday in multiple languages with a clean, minimalist, and user-friendly interface.",
+  "requestFramePermissions": []
+}
