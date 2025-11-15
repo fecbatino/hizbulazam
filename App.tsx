@@ -81,6 +81,14 @@ const ThemeToggleButton: React.FC<{ theme: Theme; onToggle: () => void }> = ({ t
     );
 }
 
+const getDistance = (touches: React.TouchList) => {
+    const [touch1, touch2] = [touches[0], touches[1]];
+    return Math.sqrt(
+        Math.pow(touch2.clientX - touch1.clientX, 2) +
+        Math.pow(touch2.clientY - touch1.clientY, 2)
+    );
+};
+
 const App: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
@@ -145,6 +153,7 @@ const App: React.FC = () => {
     // Refs for pinch-zoom
     const pinchStartDist = useRef<number>(0);
     const pinchStartFontSize = useRef<number>(settings.arabicFontSize);
+    const pinchStartTranslationFontSize = useRef<number>(settings.translationFontSize);
     
     // Save favorites to localStorage
     useEffect(() => {
@@ -182,9 +191,9 @@ const App: React.FC = () => {
         }
     }, [theme]);
 
-    const handleSettingsChange = (newSettings: Partial<AppSettings>) => {
+    const handleSettingsChange = useCallback((newSettings: Partial<AppSettings>) => {
         setSettings((prev: AppSettings) => ({ ...prev, ...newSettings }));
-    };
+    }, []);
 
     const toggleTheme = useCallback(() => {
         setTheme((prevTheme: Theme) => prevTheme === 'light' ? 'dark' : 'light');
@@ -221,31 +230,37 @@ const App: React.FC = () => {
     });
 
     // Pinch-to-zoom handlers
-    const getDistance = (touches: React.TouchList) => {
-        const [touch1, touch2] = [touches[0], touches[1]];
-        return Math.sqrt(
-            Math.pow(touch2.clientX - touch1.clientX, 2) +
-            Math.pow(touch2.clientY - touch1.clientY, 2)
-        );
-    };
-    
     const onTouchStart = useCallback((e: React.TouchEvent) => {
         swipeHandlers.onTouchStart(e); // Keep swipe functionality
         if (e.touches.length === 2) {
             pinchStartDist.current = getDistance(e.touches);
             pinchStartFontSize.current = settings.arabicFontSize;
+            pinchStartTranslationFontSize.current = settings.translationFontSize;
         }
-    }, [settings.arabicFontSize, swipeHandlers]);
+    }, [settings.arabicFontSize, settings.translationFontSize, swipeHandlers]);
     
     const onTouchMove = useCallback((e: React.TouchEvent) => {
         swipeHandlers.onTouchMove(e); // Keep swipe functionality
         if (e.touches.length === 2) {
             const currentDist = getDistance(e.touches);
             const scale = currentDist / pinchStartDist.current;
-            const newSize = pinchStartFontSize.current + (scale - 1) * 2;
-            // Clamp font size between min and max values
-            const clampedSize = Math.max(1.25, Math.min(3, newSize));
-            handleSettingsChange({ arabicFontSize: clampedSize });
+            
+            // Update the start distance for the next move event to make scaling feel more natural
+            pinchStartDist.current = currentDist;
+
+            setSettings(prev => {
+                const newArabicSize = prev.arabicFontSize * scale;
+                const clampedArabicSize = Math.max(1.25, Math.min(3, newArabicSize));
+
+                const newTranslationSize = prev.translationFontSize * scale;
+                const clampedTranslationSize = Math.max(0.75, Math.min(1.75, newTranslationSize));
+
+                return {
+                    ...prev,
+                    arabicFontSize: clampedArabicSize,
+                    translationFontSize: clampedTranslationSize,
+                };
+            });
         }
     }, [swipeHandlers]);
 
@@ -265,7 +280,7 @@ const App: React.FC = () => {
     }, [currentCollection]);
 
     return (
-        <div className="app-container bg-slate-100 dark:bg-slate-900" style={{ '--arabic-font-size': `${settings.arabicFontSize}rem` } as React.CSSProperties}>
+        <div className="app-container bg-slate-100 dark:bg-slate-900" style={{ '--arabic-font-size': `${settings.arabicFontSize}rem`, '--translation-font-size': `${settings.translationFontSize}rem` } as React.CSSProperties}>
             {error && <ErrorDisplay message={error} onDismiss={() => setError(null)} />}
             
             <header className="flex justify-between items-center p-4 w-full max-w-3xl mx-auto gap-4">
@@ -314,7 +329,6 @@ const App: React.FC = () => {
                                 showTranslation={settings.showTranslation}
                                 showFavorites={settings.showFavorites}
                                 showShare={settings.showShare}
-                                translationFontSize={settings.translationFontSize}
                             />
                         </div>
                     </>
