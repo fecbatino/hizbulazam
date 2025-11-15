@@ -25,7 +25,7 @@ const defaultSettings: AppSettings = {
     showTranslation: true,
 };
 
-const ErrorDisplay: React.FC<{ message: string; onDismiss: () => void }> = ({ message, onDismiss }) => {
+const ErrorDisplay: React.FC<{ message: string; onDismiss: () => void }> = ({ message, onDismiss }: { message: string; onDismiss: () => void }) => {
     return (
         <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-[100] flex items-start max-w-sm" role="alert">
             <svg className="w-5 h-5 mr-3 text-red-500 flex-shrink-0 mt-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -182,19 +182,19 @@ const App: React.FC = () => {
     }, [theme]);
 
     const handleSettingsChange = (newSettings: Partial<AppSettings>) => {
-        setSettings(prev => ({ ...prev, ...newSettings }));
+        setSettings((prev: AppSettings) => ({ ...prev, ...newSettings }));
     };
 
     const toggleTheme = useCallback(() => {
-        setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+        setTheme((prevTheme: Theme) => prevTheme === 'light' ? 'dark' : 'light');
     }, []);
     
     const handleNextDay = useCallback(() => {
-        setCurrentDayIndex((prevIndex) => (prevIndex + 1) % DAYS_ORDER.length);
+        setCurrentDayIndex((prevIndex: number) => (prevIndex + 1) % DAYS_ORDER.length);
     }, []);
 
     const handlePrevDay = useCallback(() => {
-        setCurrentDayIndex((prevIndex) => (prevIndex - 1 + DAYS_ORDER.length) % DAYS_ORDER.length);
+        setCurrentDayIndex((prevIndex: number) => (prevIndex - 1 + DAYS_ORDER.length) % DAYS_ORDER.length);
     }, []);
 
     const handleSelectDay = (index: number) => {
@@ -203,7 +203,7 @@ const App: React.FC = () => {
     };
 
     const toggleFavorite = useCallback((duaId: string) => {
-        setFavorites((prevFavorites) => {
+        setFavorites((prevFavorites: Set<string>) => {
             const newFavorites = new Set(prevFavorites);
             if (newFavorites.has(duaId)) {
                 newFavorites.delete(duaId);
@@ -263,10 +263,8 @@ const App: React.FC = () => {
         }
     }, [currentCollection]);
 
-    const appStyle = { '--arabic-font-size': `${settings.arabicFontSize}rem` } as React.CSSProperties;
-
     return (
-        <div style={appStyle} className="app-container bg-slate-100 dark:bg-slate-900">
+        <div className="app-container bg-slate-100 dark:bg-slate-900" style={{ '--arabic-font-size': `${settings.arabicFontSize}rem` } as React.CSSProperties}>
             {error && <ErrorDisplay message={error} onDismiss={() => setError(null)} />}
             
             <header className="flex justify-between items-center p-4 w-full max-w-3xl mx-auto gap-4">
