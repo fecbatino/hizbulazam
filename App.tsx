@@ -21,7 +21,8 @@ type Theme = 'light' | 'dark';
 const defaultSettings: AppSettings = {
     showFavorites: true,
     showShare: true,
-    arabicFontSize: 1.75, // in rem
+    arabicFontSize: 2.0, // in rem
+    translationFontSize: 1, // in rem
     showTranslation: true,
 };
 
@@ -119,7 +120,7 @@ const App: React.FC = () => {
             const storedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
             if (storedSettings) {
                 const parsed = JSON.parse(storedSettings);
-                setSettings({ ...defaultSettings, ...parsed });
+                setSettings({ ...defaultSettings, ...parsed, translationFontSize: parsed.translationFontSize ?? defaultSettings.translationFontSize });
             }
         } catch (err) {
             console.error('Error reading settings from localStorage', err);
@@ -313,6 +314,7 @@ const App: React.FC = () => {
                                 showTranslation={settings.showTranslation}
                                 showFavorites={settings.showFavorites}
                                 showShare={settings.showShare}
+                                translationFontSize={settings.translationFontSize}
                             />
                         </div>
                     </>

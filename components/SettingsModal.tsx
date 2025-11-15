@@ -4,6 +4,7 @@ export interface AppSettings {
     showFavorites: boolean;
     showShare: boolean;
     arabicFontSize: number; // Using a numeric value like rem
+    translationFontSize: number; // Using a numeric value like rem
     showTranslation: boolean;
 }
 
@@ -81,6 +82,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
                                 className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
                             />
                             <span className="text-2xl text-slate-500">A</span>
+                        </div>
+                    </div>
+                    <div className="space-y-3">
+                        <label htmlFor="translation-font-size-slider" className="block text-slate-700 dark:text-slate-300">
+                            Translation Font Size
+                        </label>
+                        <div className="flex items-center gap-4">
+                            <span className="text-sm text-slate-500">A</span>
+                                <input
+                                id="translation-font-size-slider"
+                                type="range"
+                                min="0.8"
+                                max="1.5"
+                                step="0.1"
+                                value={settings.translationFontSize ?? 1}
+                                onChange={(e) => onSettingsChange({ translationFontSize: parseFloat(e.target.value) })}
+                                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
+                            />
+                            <span className="text-lg text-slate-500">A</span>
                         </div>
                     </div>
                 </div>

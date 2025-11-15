@@ -10,6 +10,7 @@ interface DuaCardProps {
   showTranslation: boolean;
   showFavorites: boolean;
   showShare: boolean;
+  translationFontSize: number;
 }
 
 const FavoriteButton: React.FC<{ isFavorite: boolean; onClick: () => void }> = ({ isFavorite, onClick }) => {
@@ -89,6 +90,7 @@ export const DuaCard: React.FC<DuaCardProps> = ({
   showTranslation,
   showFavorites,
   showShare,
+  translationFontSize,
 }) => {
   return (
     <div className="p-2 sm:p-4 space-y-4 overflow-y-auto h-full scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
@@ -104,7 +106,7 @@ export const DuaCard: React.FC<DuaCardProps> = ({
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 truncate">
                 {getSourceContext(dua, language)}
               </p>
-              <p lang="ar" dir="rtl" className="text-slate-800 dark:text-slate-100 font-amiri leading-loose" style={{ fontSize: 'var(--arabic-font-size)' }}>
+              <p lang="ar" dir="rtl" className="text-slate-800 dark:text-slate-100 font-naskh leading-loose" style={{ fontSize: 'var(--arabic-font-size)' }}>
                 {dua.arabic_text}
               </p>
             </div>
@@ -123,7 +125,7 @@ export const DuaCard: React.FC<DuaCardProps> = ({
           {showTranslation && (
             <div>
               <hr className="border-slate-200 dark:border-slate-700 my-4" />
-              <p className="text-slate-600 dark:text-slate-300 italic text-base">
+              <p className="text-slate-600 dark:text-slate-300 italic text-base" style={{ fontSize: `${translationFontSize}rem` }}>
                 {getTranslation(dua, language)}
               </p>
             </div>
