@@ -17,7 +17,6 @@
       /* Simple scroll-snap for swipe-like effect on desktop and for smoother transitions */
       .snap-container {
         scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch; /* for smooth scrolling on iOS */
       }
       .snap-child {
         scroll-snap-align: center;
@@ -37,6 +36,15 @@
       .font-almarai {
         font-family: 'Almarai', sans-serif;
         font-weight: 400;
+      }
+      /* Main App Container */
+      .app-container {
+        --arabic-font-size: 1.75rem;
+        min-height: 100vh;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        font-family: sans-serif;
       }
     </style>
   <script type="importmap">

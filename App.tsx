@@ -1,15 +1,15 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { DUA_DATA } from './hooks/duas';
-import { Language } from './types';
-import { DAYS_ORDER, DATE_DAY_TO_ORDER_INDEX } from './constants';
-import { useSwipe } from './hooks/useSwipe';
-import { DuaCard } from './components/DuaCard';
-import { LanguageSelector } from './components/LanguageSelector';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AboutModal } from './components/AboutModal';
 import { DayNavigator } from './components/DayNavigator';
 import { DaySelectorModal } from './components/DaySelectorModal';
-import { SettingsIcon, SunIcon, MoonIcon, InformationCircleIcon } from './components/icons';
-import { SettingsModal, AppSettings } from './components/SettingsModal';
-import { AboutModal } from './components/AboutModal';
+import { DuaCard } from './components/DuaCard';
+import { InformationCircleIcon, MoonIcon, SettingsIcon, SunIcon } from './components/icons';
+import { LanguageSelector } from './components/LanguageSelector';
+import { AppSettings, SettingsModal } from './components/SettingsModal';
+import { DATE_DAY_TO_ORDER_INDEX, DAYS_ORDER } from './constants';
+import { DUA_DATA } from './hooks/duas';
+import { useSwipe } from './hooks/useSwipe';
+import { Language } from './types';
 
 
 const FAVORITES_STORAGE_KEY = 'dailyDuaFavorites';
@@ -266,7 +266,7 @@ const App: React.FC = () => {
     const appStyle = { '--arabic-font-size': `${settings.arabicFontSize}rem` } as React.CSSProperties;
 
     return (
-        <div style={appStyle} className="min-h-screen w-full bg-slate-100 dark:bg-slate-900 flex flex-col font-sans">
+        <div style={appStyle} className="app-container bg-slate-100 dark:bg-slate-900">
             {error && <ErrorDisplay message={error} onDismiss={() => setError(null)} />}
             
             <header className="flex justify-between items-center p-4 w-full max-w-3xl mx-auto gap-4">
