@@ -229,25 +229,25 @@ const App: React.FC = () => {
         );
     };
     
-    const onTouchStart = (e: React.TouchEvent) => {
+    const onTouchStart = useCallback((e: React.TouchEvent) => {
         swipeHandlers.onTouchStart(e); // Keep swipe functionality
         if (e.touches.length === 2) {
             pinchStartDist.current = getDistance(e.touches);
             pinchStartFontSize.current = settings.arabicFontSize;
         }
-    };
+    }, [settings.arabicFontSize, swipeHandlers]);
     
-    const onTouchMove = (e: React.TouchEvent) => {
+    const onTouchMove = useCallback((e: React.TouchEvent) => {
         swipeHandlers.onTouchMove(e); // Keep swipe functionality
         if (e.touches.length === 2) {
             const currentDist = getDistance(e.touches);
             const scale = currentDist / pinchStartDist.current;
-            const newSize = pinchStartFontSize.current * scale;
+            const newSize = pinchStartFontSize.current + (scale - 1) * 2;
             // Clamp font size between min and max values
             const clampedSize = Math.max(1.25, Math.min(3, newSize));
             handleSettingsChange({ arabicFontSize: clampedSize });
         }
-    };
+    }, [swipeHandlers]);
 
     const currentCollection = useMemo(() => {
         if (!DUA_DATA || DUA_DATA.length === 0) return null;
