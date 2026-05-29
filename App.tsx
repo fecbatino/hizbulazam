@@ -1,15 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AboutModal } from './components/AboutModal';
 import { DayNavigator } from './components/DayNavigator';
-import { DaySelectorModal } from './components/DaySelectorModal';
 import { DuaCard } from './components/DuaCard';
 import { InformationCircleIcon, MoonIcon, SettingsIcon, SunIcon } from './components/icons';
 import { LanguageSelector } from './components/LanguageSelector';
-import { AppSettings, SettingsModal } from './components/SettingsModal';
+import { AppSettings } from './components/SettingsModal';
 import { DATE_DAY_TO_ORDER_INDEX, DAYS_ORDER } from './constants';
 import { DUA_DATA } from './hooks/duas';
 import { useSwipe } from './hooks/useSwipe';
 import { Language } from './types';
+
+const DaySelectorModal = React.lazy(() =>
+  import('./components/DaySelectorModal').then(module => ({ default: module.DaySelectorModal }))
+);
+const SettingsModal = React.lazy(() =>
+  import('./components/SettingsModal').then(module => ({ default: module.SettingsModal }))
+);
 
 
 const FAVORITES_STORAGE_KEY = 'dailyDuaFavorites';
@@ -329,26 +335,29 @@ const App: React.FC = () => {
                                 showTranslation={settings.showTranslation}
                                 showFavorites={settings.showFavorites}
                                 showShare={settings.showShare}
+                                translationFontSize={settings.translationFontSize}
                             />
                         </div>
                     </>
                 )}
             </main>
             
-            <DaySelectorModal 
-                isOpen={isDaySelectorOpen}
-                onClose={() => setIsDaySelectorOpen(false)}
-                onSelectDay={handleSelectDay}
-                days={DUA_DATA.map(d => d.name[language])}
-                currentIndex={currentDayIndex}
-            />
+            <React.Suspense fallback={null}>
+                <DaySelectorModal 
+                    isOpen={isDaySelectorOpen}
+                    onClose={() => setIsDaySelectorOpen(false)}
+                    onSelectDay={handleSelectDay}
+                    days={DUA_DATA.map(d => d.name[language])}
+                    currentIndex={currentDayIndex}
+                />
 
-            <SettingsModal
-                isOpen={isSettingsOpen}
-                onClose={() => setIsSettingsOpen(false)}
-                settings={settings}
-                onSettingsChange={handleSettingsChange}
-            />
+                <SettingsModal
+                    isOpen={isSettingsOpen}
+                    onClose={() => setIsSettingsOpen(false)}
+                    settings={settings}
+                    onSettingsChange={handleSettingsChange}
+                />
+            </React.Suspense>
             
             <AboutModal
                 isOpen={isAboutOpen}

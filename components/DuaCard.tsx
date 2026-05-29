@@ -82,63 +82,81 @@ const ShareButton: React.FC<{ dua: DuaItem; language: Language }> = ({ dua, lang
 };
 
 // FIX: DuaCard was not exported, causing an import error in App.tsx. It is now implemented and exported.
-export const DuaCard: React.FC<DuaCardProps> = ({
-  collection,
-  language,
-  favorites,
-  onToggleFavorite,
-  showTranslation,
-  showFavorites,
-  showShare,
-  translationFontSize,
-}) => {
-  return (
-    <div className="p-2 sm:p-4 space-y-4 overflow-y-auto h-full scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
-      {collection.hizbTitle && (
-        <h3 className="text-center font-semibold text-lg text-teal-600 dark:text-teal-400 pb-2 border-b-2 border-slate-200 dark:border-slate-700" lang="ar" dir="rtl">
-          {collection.hizbTitle}
-        </h3>
-      )}
-      {collection.duas.map((dua) => (
-        <article key={dua.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-4 sm:p-6 flex flex-col gap-4">
-          <div className="flex justify-between items-start">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 truncate">
-                {getSourceContext(dua, language)}
-              </p>
-              <p lang="ar" dir="rtl" className="text-slate-800 dark:text-slate-100 font-naskh leading-loose" style={{ fontSize: 'var(--arabic-font-size)' }}>
-                {dua.arabic_text}
-              </p>
+export const DuaCard = React.memo<DuaCardProps>(
+  ({
+    collection,
+    language,
+    favorites,
+    onToggleFavorite,
+    showTranslation,
+    showFavorites,
+    showShare,
+    translationFontSize,
+  }) => {
+    return (
+      <div className="p-2 sm:p-4 space-y-4 overflow-y-auto h-full scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
+        {collection.hizbTitle && (
+          <h3 className="text-center font-semibold text-lg text-teal-600 dark:text-teal-400 pb-2 border-b-2 border-slate-200 dark:border-slate-700" lang="ar" dir="rtl">
+            {collection.hizbTitle}
+          </h3>
+        )}
+        {collection.duas.map((dua) => (
+          <article key={dua.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-4 sm:p-6 flex flex-col gap-4">
+            <div className="flex justify-between items-start">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 truncate">
+                  {getSourceContext(dua, language)}
+                </p>
+                <p lang="ar" dir="rtl" className="text-slate-800 dark:text-slate-100 font-naskh leading-loose" style={{ fontSize: 'var(--arabic-font-size)' }}>
+                  {dua.arabic_text}
+                </p>
+              </div>
+              
+              <div className="flex flex-col items-center ml-2 sm:ml-4 space-y-2 flex-shrink-0">
+                  {showFavorites && (
+                    <FavoriteButton
+                      isFavorite={favorites.has(dua.id)}
+                      onClick={() => onToggleFavorite(dua.id)}
+                    />
+                  )}
+                  {showShare && <ShareButton dua={dua} language={language} />}
+              </div>
             </div>
-            
-            <div className="flex flex-col items-center ml-2 sm:ml-4 space-y-2 flex-shrink-0">
-                {showFavorites && (
-                  <FavoriteButton
-                    isFavorite={favorites.has(dua.id)}
-                    onClick={() => onToggleFavorite(dua.id)}
-                  />
-                )}
-                {showShare && <ShareButton dua={dua} language={language} />}
-            </div>
-          </div>
 
-          {showTranslation && (
-            <div>
-              <hr className="border-slate-200 dark:border-slate-700 my-4" />
-              <p className="text-slate-600 dark:text-slate-300 italic text-base" style={{ fontSize: `${translationFontSize}rem` }}>
-                {getTranslation(dua, language)}
+            {showTranslation && (
+              <div>
+                <hr className="border-slate-200 dark:border-slate-700 my-4" />
+                <p className="text-slate-600 dark:text-slate-300 italic text-base" style={{ fontSize: `${translationFontSize}rem` }}>
+                  {getTranslation(dua, language)}
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center mt-2 text-xs">
+              <p className="text-slate-400 dark:text-slate-500">
+                {/* FIX: Property 'source_reference' does not exist on type 'DuaItem'. Use 'primary_sources' instead. */}
+                {dua.primary_sources && dua.primary_sources.length > 0 && `Ref: ${dua.primary_sources.map(s => `${s.book} ${s.ref}`).join(', ')}`}
               </p>
             </div>
-          )}
+          </article>
+        ))}
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    if (prevProps.collection !== nextProps.collection) return false;
+    if (prevProps.language !== nextProps.language) return false;
+    if (prevProps.showTranslation !== nextProps.showTranslation) return false;
+    if (prevProps.showFavorites !== nextProps.showFavorites) return false;
+    if (prevProps.showShare !== nextProps.showShare) return false;
+    if (prevProps.translationFontSize !== nextProps.translationFontSize) return false;
+    if (prevProps.onToggleFavorite !== nextProps.onToggleFavorite) return false;
 
-          <div className="flex justify-between items-center mt-2 text-xs">
-            <p className="text-slate-400 dark:text-slate-500">
-              {/* FIX: Property 'source_reference' does not exist on type 'DuaItem'. Use 'primary_sources' instead. */}
-              {dua.primary_sources && dua.primary_sources.length > 0 && `Ref: ${dua.primary_sources.map(s => `${s.book} ${s.ref}`).join(', ')}`}
-            </p>
-          </div>
-        </article>
-      ))}
-    </div>
-  );
-};
+    // Compare favorites set content
+    if (prevProps.favorites.size !== nextProps.favorites.size) return false;
+    for (const fav of prevProps.favorites) {
+      if (!nextProps.favorites.has(fav)) return false;
+    }
+    return true;
+  }
+);
