@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="gold-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="512" height="512" rx="128" fill="url(#bg-grad)" />
+  
+  <!-- Subtle inner shadow/border -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="none" stroke="url(#gold-grad)" stroke-width="4" stroke-opacity="0.3" />
+  
+  <!-- Graphic: Crescent Moon and Prayer/Dua Motif -->
+  <g transform="translate(256, 240) scale(1.1)">
+    <!-- Crescent Moon -->
+    <path d="M-20,-80 A90,90 0 1,0 100,40 A75,75 0 1,1 -20,-80 Z" fill="url(#gold-grad)" />
+    
+    <!-- Decorative Star / Sparkle -->
+    <path d="M40,-30 L45,-10 L65,-5 L45,0 L40,20 L35,0 L15,-5 L35,-10 Z" fill="#ffffff" />
+    
+    <!-- Open Book / Quran Outline below -->
+    <path d="M-70,50 C-40,30 -10,45 0,55 C10,45 40,30 70,50 L70,80 C40,60 10,75 0,85 C-10,75 -40,60 -70,80 Z" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M0,55 L0,85" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" />
+  </g>
+</svg>
