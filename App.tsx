@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AboutModal } from './components/AboutModal';
+import { BottomNav, BottomTab } from './components/BottomNav';
 import { DayNavigator } from './components/DayNavigator';
 import { DuaCard } from './components/DuaCard';
-import { InformationCircleIcon, MoonIcon, SettingsIcon, SunIcon } from './components/icons';
 import { LanguageSelector } from './components/LanguageSelector';
 import { AppSettings } from './components/SettingsModal';
 import { DATE_DAY_TO_ORDER_INDEX, DAYS_ORDER } from './constants';
@@ -17,7 +16,6 @@ const SettingsModal = React.lazy(() =>
   import('./components/SettingsModal').then(module => ({ default: module.SettingsModal }))
 );
 
-
 const FAVORITES_STORAGE_KEY = 'dailyDuaFavorites';
 const SETTINGS_STORAGE_KEY = 'dailyDuaAppSettings';
 const THEME_STORAGE_KEY = 'dailyDuaTheme';
@@ -25,379 +23,401 @@ const THEME_STORAGE_KEY = 'dailyDuaTheme';
 type Theme = 'light' | 'dark';
 
 const defaultSettings: AppSettings = {
-    showFavorites: true,
-    showShare: true,
-    arabicFontSize: 2.0, // in rem
-    translationFontSize: 1, // in rem
-    showTranslation: true,
+  showFavorites: true,
+  showShare: true,
+  arabicFontSize: 1.9,
+  translationFontSize: 1,
+  showTranslation: true,
 };
 
-const ErrorDisplay: React.FC<{ message: string; onDismiss: () => void }> = ({ message, onDismiss }: { message: string; onDismiss: () => void }) => {
-    return (
-        <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-[100] flex items-start max-w-sm" role="alert">
-            <svg className="w-5 h-5 mr-3 text-red-500 flex-shrink-0 mt-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
-            </svg>
-            <div className="flex-grow">
-                <p className="font-bold">Application Error</p>
-                <p className="text-sm">{message}</p>
-            </div>
-            <button onClick={onDismiss} className="ml-auto -mr-2 -mt-2 p-1.5" aria-label="Dismiss">
-                <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                </svg>
-            </button>
+// ── Error Banner ──────────────────────────────────────────────────────────────
+const ErrorDisplay: React.FC<{ message: string; onDismiss: () => void }> = ({ message, onDismiss }) => (
+  <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-[100] flex items-start max-w-sm" role="alert">
+    <div className="flex-grow">
+      <p className="font-bold">Fehler</p>
+      <p className="text-sm">{message}</p>
+    </div>
+    <button onClick={onDismiss} className="ml-4 p-1" aria-label="Schließen">✕</button>
+  </div>
+);
+
+// ── Favorites View ────────────────────────────────────────────────────────────
+const EMPTY_FAV: Record<Language, string> = {
+  en: 'No favorites yet — tap the ☆ on any dua to save it.',
+  de: 'Noch keine Favoriten — tippe auf ☆ bei einem Dua.',
+  fr: 'Aucun favori encore — appuie sur ☆ sur un dua.',
+  ar: 'لا توجد مفضلات بعد — اضغط على ☆ لحفظ دعاء.',
+};
+
+const FAV_TITLE: Record<Language, string> = {
+  en: 'Favorites', de: 'Favoriten', fr: 'Favoris', ar: 'المفضلة',
+};
+
+const FavoritesView: React.FC<{
+  favorites: Set<string>;
+  language: Language;
+  onToggleFavorite: (id: string) => void;
+  showShare: boolean;
+  translationFontSize: number;
+  showTranslation: boolean;
+}> = ({ favorites, language, onToggleFavorite, showShare, translationFontSize, showTranslation }) => {
+  const favDuas = useMemo(
+    () => DUA_DATA.flatMap(col => col.duas.filter(d => favorites.has(d.id))),
+    [favorites]
+  );
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <div style={{
+        background: 'var(--hza-card)',
+        borderBottom: '1px solid var(--hza-border)',
+        padding: '14px 16px',
+        textAlign: 'center',
+        fontFamily: "'Playfair Display', serif",
+        fontWeight: 600,
+        fontSize: 18,
+        color: 'var(--hza-text)',
+      }}>
+        {FAV_TITLE[language]}
+      </div>
+
+      {favDuas.length === 0 ? (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: 'var(--hza-hint)', textAlign: 'center', lineHeight: 1.6 }}>
+            {EMPTY_FAV[language]}
+          </p>
         </div>
-    );
-};
+      ) : (
+        <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {favDuas.map(dua => {
+            const translation = language === 'de' ? dua.translation_de : language === 'fr' ? dua.translation_fr : language === 'ar' ? '' : dua.translation_en;
+            const sourceCtx = language === 'de' ? dua.source_context_de : language === 'fr' ? dua.source_context_fr : dua.source_context_en;
+            const sourceRef = dua.primary_sources?.length ? dua.primary_sources.map(s => `${s.book} ${s.ref}`).join(', ') : '';
+            const footerText = sourceRef ? `${sourceRef} · ${sourceCtx}` : sourceCtx;
 
-const TranslationToggleButton: React.FC<{ isVisible: boolean; onToggle: () => void }> = ({ isVisible, onToggle }) => {
-    const label = isVisible ? "Hide Translation" : "Show Translation";
-    return (
-        <button
-            onClick={onToggle}
-            className="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700 transition-colors"
-            aria-label={label}
-        >
-            {isVisible ? (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                    <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
-                    <path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.18l.88-1.472a1.65 1.65 0 0 1 1.541-.959h12.83a1.65 1.65 0 0 1 1.54 1.059l.88 1.472a1.651 1.651 0 0 1 0 1.18l-.88 1.472a1.65 1.65 0 0 1-1.54.959H3.085a1.65 1.65 0 0 1-1.54-.959L.664 10.59ZM10 6a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z" clipRule="evenodd" />
-                </svg>
-            ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                    <path fillRule="evenodd" d="M3.28 2.22a.75.75 0 0 0-1.06 1.06l14.5 14.5a.75.75 0 1 0 1.06-1.06l-1.745-1.745a10.029 10.029 0 0 0 3.3-4.38 1.651 1.651 0 0 0 0-1.18l-.88-1.472a1.65 1.65 0 0 0-1.54-.959H4.663L3.28 2.22ZM7.75 5.5a4.5 4.5 0 0 1 4.5 4.5 2.25 2.25 0 0 0 2.25 2.25 1.5 1.5 0 0 0 1.5-1.5c0-.986-.425-1.85-1.097-2.443a4.502 4.502 0 0 1-2.153-.614Z" clipRule="evenodd" />
-                    <path d="M1.664 10.59a1.651 1.651 0 0 1 0-1.18l.88-1.472A1.65 1.65 0 0 1 4.085 7H15.34a1.65 1.65 0 0 1 1.54 1.059l.88 1.472a1.651 1.651 0 0 1 0 1.18l-.88 1.472a1.65 1.65 0 0 1-1.54.959H8.196a10.03 10.03 0 0 0-1.37-.225H4.085a1.65 1.65 0 0 1-1.54-.959L1.664 10.59Z" />
-                </svg>
-            )}
-        </button>
-    );
-}
-
-const ThemeToggleButton: React.FC<{ theme: Theme; onToggle: () => void }> = ({ theme, onToggle }) => {
-    const label = theme === 'light' ? "Switch to dark mode" : "Switch to light mode";
-    return (
-        <button
-            onClick={onToggle}
-            className="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700 transition-colors"
-            aria-label={label}
-        >
-            {theme === 'light' ? <MoonIcon /> : <SunIcon />}
-        </button>
-    );
-}
-
-const getDistance = (touches: React.TouchList) => {
-    const [touch1, touch2] = [touches[0], touches[1]];
-    return Math.sqrt(
-        Math.pow(touch2.clientX - touch1.clientX, 2) +
-        Math.pow(touch2.clientY - touch1.clientY, 2)
-    );
-};
-
-const App: React.FC = () => {
-    const [error, setError] = useState<string | null>(null);
-
-    const getInitialDayIndex = (): number => {
-        try {
-            const today = new Date().getDay();
-            return DATE_DAY_TO_ORDER_INDEX[today] ?? 0;
-        } catch (e) {
-            console.error("Error calculating initial day:", e);
-            return 0; // Fallback gracefully
-        }
-    };
-
-    const [currentDayIndex, setCurrentDayIndex] = useState<number>(getInitialDayIndex);
-    const [language, setLanguage] = useState<Language>('de');
-    const [favorites, setFavorites] = useState<Set<string>>(new Set());
-    const [settings, setSettings] = useState<AppSettings>(defaultSettings);
-    const [isDaySelectorOpen, setIsDaySelectorOpen] = useState<boolean>(false);
-    const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-    const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false);
-    const [theme, setTheme] = useState<Theme>('light');
-
-    // Load state from localStorage on initial render
-    useEffect(() => {
-        let initError: string | null = null;
-        // Load Favorites
-        try {
-            const storedFavorites = localStorage.getItem(FAVORITES_STORAGE_KEY);
-            if (storedFavorites) setFavorites(new Set(JSON.parse(storedFavorites)));
-        } catch (err) {
-            console.error('Error reading favorites from localStorage', err);
-            initError = 'Could not load your saved favorites.';
-        }
-
-        // Load Settings
-        try {
-            const storedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-            if (storedSettings) {
-                const parsed = JSON.parse(storedSettings);
-                setSettings({ ...defaultSettings, ...parsed, translationFontSize: parsed.translationFontSize ?? defaultSettings.translationFontSize });
-            }
-        } catch (err) {
-            console.error('Error reading settings from localStorage', err);
-            if (!initError) initError = 'Could not load your settings.';
-        }
-
-        // Load Theme
-        try {
-            const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-            if (storedTheme === 'dark' || storedTheme === 'light') {
-                setTheme(storedTheme);
-            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                setTheme('dark');
-            }
-        } catch (err) {
-            console.error('Error reading theme from localStorage', err);
-            if (!initError) initError = 'Could not load your theme preference.';
-        }
-        if (initError) setError(initError);
-    }, []);
-
-    // Refs for pinch-zoom
-    const pinchStartDist = useRef<number>(0);
-    const pinchStartFontSize = useRef<number>(settings.arabicFontSize);
-    const pinchStartTranslationFontSize = useRef<number>(settings.translationFontSize);
-    
-    // Save favorites to localStorage
-    useEffect(() => {
-        try {
-            localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(Array.from(favorites)));
-        } catch (err) {
-            console.error('Error saving favorites to localStorage', err);
-            setError('Could not save favorites. Your browser storage might be full or in private mode.');
-        }
-    }, [favorites]);
-
-    // Save settings to localStorage
-    useEffect(() => {
-        try {
-            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-        } catch (err) {
-            console.error('Error saving settings to localStorage', err);
-            setError('Could not save settings. Your browser storage might be full or in private mode.');
-        }
-    }, [settings]);
-
-    // Apply and save theme
-    useEffect(() => {
-        const root = window.document.documentElement;
-        if (theme === 'dark') {
-            root.classList.add('dark');
-        } else {
-            root.classList.remove('dark');
-        }
-        try {
-            localStorage.setItem(THEME_STORAGE_KEY, theme);
-        } catch (err) {
-            console.error('Error saving theme to localStorage', err);
-            setError('Could not save theme preference. Your browser storage might be full or in private mode.');
-        }
-    }, [theme]);
-
-    useEffect(() => {
-        const html = document.documentElement;
-        if (language === 'ar') {
-            html.setAttribute('lang', 'ar');
-            html.setAttribute('dir', 'rtl');
-        } else {
-            html.setAttribute('lang', language);
-            html.setAttribute('dir', 'ltr');
-        }
-    }, [language]);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key !== 'Escape') return;
-            if (isAboutOpen) setIsAboutOpen(false);
-            else if (isSettingsOpen) setIsSettingsOpen(false);
-            else if (isDaySelectorOpen) setIsDaySelectorOpen(false);
-        };
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isAboutOpen, isSettingsOpen, isDaySelectorOpen]);
-
-    const handleSettingsChange = useCallback((newSettings: Partial<AppSettings>) => {
-        setSettings((prev: AppSettings) => ({ ...prev, ...newSettings }));
-    }, []);
-
-    const toggleTheme = useCallback(() => {
-        setTheme((prevTheme: Theme) => prevTheme === 'light' ? 'dark' : 'light');
-    }, []);
-    
-    const handleNextDay = useCallback(() => {
-        setCurrentDayIndex((prevIndex: number) => (prevIndex + 1) % DAYS_ORDER.length);
-    }, []);
-
-    const handlePrevDay = useCallback(() => {
-        setCurrentDayIndex((prevIndex: number) => (prevIndex - 1 + DAYS_ORDER.length) % DAYS_ORDER.length);
-    }, []);
-
-    const handleSelectDay = (index: number) => {
-        setCurrentDayIndex(index);
-        setIsDaySelectorOpen(false);
-    };
-
-    const toggleFavorite = useCallback((duaId: string) => {
-        setFavorites((prevFavorites: Set<string>) => {
-            const newFavorites = new Set(prevFavorites);
-            if (newFavorites.has(duaId)) {
-                newFavorites.delete(duaId);
-            } else {
-                newFavorites.add(duaId);
-            }
-            return newFavorites;
-        });
-    }, []);
-
-    const swipeHandlers = useSwipe({
-        onSwipedLeft: handleNextDay,
-        onSwipedRight: handlePrevDay,
-    });
-
-    // Pinch-to-zoom handlers
-    const onTouchStart = useCallback((e: React.TouchEvent) => {
-        swipeHandlers.onTouchStart(e); // Keep swipe functionality
-        if (e.touches.length === 2) {
-            pinchStartDist.current = getDistance(e.touches);
-            pinchStartFontSize.current = settings.arabicFontSize;
-            pinchStartTranslationFontSize.current = settings.translationFontSize;
-        }
-    }, [settings.arabicFontSize, settings.translationFontSize, swipeHandlers]);
-    
-    const onTouchMove = useCallback((e: React.TouchEvent) => {
-        swipeHandlers.onTouchMove(e); // Keep swipe functionality
-        if (e.touches.length === 2) {
-            const currentDist = getDistance(e.touches);
-            const scale = currentDist / pinchStartDist.current;
-            
-            // Update the start distance for the next move event to make scaling feel more natural
-            pinchStartDist.current = currentDist;
-
-            setSettings(prev => {
-                const newArabicSize = prev.arabicFontSize * scale;
-                const clampedArabicSize = Math.max(1.25, Math.min(3, newArabicSize));
-
-                const newTranslationSize = prev.translationFontSize * scale;
-                const clampedTranslationSize = Math.max(0.75, Math.min(1.75, newTranslationSize));
-
-                return {
-                    ...prev,
-                    arabicFontSize: clampedArabicSize,
-                    translationFontSize: clampedTranslationSize,
-                };
-            });
-        }
-    }, [swipeHandlers]);
-
-    const currentCollection = useMemo(() => {
-        if (!DUA_DATA || DUA_DATA.length === 0) return null;
-        if (currentDayIndex < 0 || currentDayIndex >= DUA_DATA.length) {
-            console.error(`Invalid day index: ${currentDayIndex}. Falling back to index 0.`);
-            return DUA_DATA[0];
-        }
-        return DUA_DATA[currentDayIndex];
-    }, [currentDayIndex]);
-
-    useEffect(() => {
-        if (!currentCollection) {
-            setError("Failed to load prayers. The application data may be missing. Please try refreshing the page.");
-        }
-    }, [currentCollection]);
-
-    return (
-        <div className="app-container bg-slate-100 dark:bg-slate-900" style={{ '--arabic-font-size': `${settings.arabicFontSize}rem`, '--translation-font-size': `${settings.translationFontSize}rem` } as React.CSSProperties}>
-            {error && <ErrorDisplay message={error} onDismiss={() => setError(null)} />}
-            
-            <header className="flex justify-between items-center p-4 w-full max-w-3xl mx-auto gap-4">
-                <h1 className="text-4xl font-amiri font-bold text-slate-800 dark:text-slate-100 flex-shrink-0">
-                    Daily <span className="text-teal-600 dark:text-teal-400">Dua</span>
-                </h1>
-                <div className="flex items-center justify-end flex-wrap-reverse gap-1">
-                    <LanguageSelector currentLanguage={language} onLanguageChange={setLanguage} />
-                    <button onClick={() => setIsSettingsOpen(true)} className="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700 transition-colors" aria-label="Open settings">
-                        <SettingsIcon />
-                    </button>
-                    <button onClick={() => setIsAboutOpen(true)} className="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700 transition-colors" aria-label="About this app">
-                        <InformationCircleIcon />
-                    </button>
-                    {language !== 'ar' && (
-                        <TranslationToggleButton isVisible={settings.showTranslation} onToggle={() => handleSettingsChange({ showTranslation: !settings.showTranslation })} />
-                    )}
-                    <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
+            return (
+              <article key={dua.id} style={{ background: 'var(--hza-card)', borderRadius: 16, border: '1px solid var(--hza-border)', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '10px 14px 8px', borderBottom: '1px solid var(--hza-border)', gap: 8 }}>
+                  <button
+                    onClick={() => onToggleFavorite(dua.id)}
+                    aria-label="Aus Favoriten entfernen"
+                    style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--hza-border)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'var(--hza-gold)' }}
+                  >★</button>
+                  {showShare && (
+                    <button
+                      onClick={async () => {
+                        const text = `${dua.arabic_text}${translation ? `\n\n${translation}` : ''}\n\n${sourceCtx}`;
+                        if (navigator.share) { try { await navigator.share({ text }); } catch {} }
+                        else { try { await navigator.clipboard.writeText(text); alert('Kopiert!'); } catch {} }
+                      }}
+                      aria-label="Teilen"
+                      style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--hza-border)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'var(--hza-hint)' }}
+                    >↗</button>
+                  )}
                 </div>
-            </header>
-
-            <main className="flex-grow flex flex-col" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={swipeHandlers.onTouchEnd}>
-                {!currentCollection ? (
-                    <div className="flex-grow flex items-center justify-center p-4">
-                        <div className="text-center">
-                            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400">Failed to Load Content</h2>
-                            <p className="text-slate-600 dark:text-slate-300 mt-2">
-                                There was a problem loading the prayers for the selected day. Please refresh the page.
-                            </p>
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        <div className="w-full max-w-3xl mx-auto">
-                            <DayNavigator
-                                dayName={currentCollection.name[language]}
-                                onPrev={handlePrevDay}
-                                onNext={handleNextDay}
-                                onDayNameClick={() => setIsDaySelectorOpen(true)}
-                                isRtl={language === 'ar'}
-                            />
-                        </div>
-                        <div className="flex-grow overflow-hidden">
-                            <DuaCard 
-                                collection={currentCollection} 
-                                language={language}
-                                favorites={favorites}
-                                onToggleFavorite={toggleFavorite}
-                                showTranslation={settings.showTranslation}
-                                showFavorites={settings.showFavorites}
-                                showShare={settings.showShare}
-                                translationFontSize={settings.translationFontSize}
-                            />
-                        </div>
-                    </>
+                <p lang="ar" dir="rtl" style={{ fontFamily: "'Amiri', serif", fontSize: 'var(--arabic-font-size, 1.9rem)', lineHeight: 2.2, textAlign: 'center', color: 'var(--hza-text)', padding: '16px 16px', margin: 0 }}>
+                  {dua.arabic_text}
+                </p>
+                {showTranslation && language !== 'ar' && translation && (
+                  <>
+                    <div style={{ height: 1, background: 'var(--hza-border)', margin: '0 14px' }} />
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: `${translationFontSize}rem`, fontStyle: 'italic', color: 'var(--hza-muted)', padding: '12px 14px', lineHeight: 1.6, margin: 0 }}>
+                      {translation}
+                    </p>
+                  </>
                 )}
-            </main>
-            
-            <React.Suspense fallback={null}>
-                <DaySelectorModal
-                    isOpen={isDaySelectorOpen}
-                    onClose={() => setIsDaySelectorOpen(false)}
-                    onSelectDay={handleSelectDay}
-                    days={DUA_DATA.map(d => d.name[language])}
-                    currentIndex={currentDayIndex}
-                    language={language}
-                />
-
-                <SettingsModal
-                    isOpen={isSettingsOpen}
-                    onClose={() => setIsSettingsOpen(false)}
-                    settings={settings}
-                    onSettingsChange={handleSettingsChange}
-                    language={language}
-                />
-            </React.Suspense>
-            
-            <AboutModal
-                isOpen={isAboutOpen}
-                onClose={() => setIsAboutOpen(false)}
-                language={language}
-            />
-
-            <footer className="text-center p-4 text-xs text-slate-400 dark:text-slate-500">
-                <p>Swipe left or right to navigate. Pinch to zoom text.</p>
-                <p>Created with focus and tranquility in mind.</p>
-            </footer>
+                {footerText && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px 12px' }}>
+                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--hza-green)', flexShrink: 0 }} />
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--hza-hint)', lineHeight: 1.4 }}>{footerText}</span>
+                  </div>
+                )}
+              </article>
+            );
+          })}
         </div>
-    );
+      )}
+    </div>
+  );
+};
+
+// ── Theme toggle button (styled for green header) ─────────────────────────────
+const ThemeToggleButton: React.FC<{ theme: Theme; onToggle: () => void }> = ({ theme, onToggle }) => (
+  <button
+    onClick={onToggle}
+    aria-label={theme === 'light' ? 'Dunkelmodus' : 'Hellmodus'}
+    style={{
+      background: 'rgba(0,0,0,0.2)',
+      border: '1px solid rgba(255,255,255,0.3)',
+      borderRadius: 8,
+      padding: '7px 10px',
+      color: 'white',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: 16,
+    }}
+  >
+    {theme === 'light' ? '🌙' : '☀️'}
+  </button>
+);
+
+// ── Pinch distance helper ─────────────────────────────────────────────────────
+const getDistance = (touches: React.TouchList) => {
+  const [t1, t2] = [touches[0], touches[1]];
+  return Math.sqrt(Math.pow(t2.clientX - t1.clientX, 2) + Math.pow(t2.clientY - t1.clientY, 2));
+};
+
+// ── App ───────────────────────────────────────────────────────────────────────
+const App: React.FC = () => {
+  const [error, setError] = useState<string | null>(null);
+
+  const getInitialDayIndex = (): number => {
+    try { return DATE_DAY_TO_ORDER_INDEX[new Date().getDay()] ?? 0; }
+    catch { return 0; }
+  };
+
+  const [currentDayIndex, setCurrentDayIndex] = useState<number>(getInitialDayIndex);
+  const [language, setLanguage] = useState<Language>('de');
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+  const [isDaySelectorOpen, setIsDaySelectorOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [theme, setTheme] = useState<Theme>('light');
+  const [activeView, setActiveView] = useState<'duas' | 'favorites'>('duas');
+
+  // Load from localStorage
+  useEffect(() => {
+    let initError: string | null = null;
+    try {
+      const s = localStorage.getItem(FAVORITES_STORAGE_KEY);
+      if (s) setFavorites(new Set(JSON.parse(s)));
+    } catch { initError = 'Favoriten konnten nicht geladen werden.'; }
+
+    try {
+      const s = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (s) {
+        const parsed = JSON.parse(s);
+        setSettings({ ...defaultSettings, ...parsed, translationFontSize: parsed.translationFontSize ?? defaultSettings.translationFontSize });
+      }
+    } catch { if (!initError) initError = 'Einstellungen konnten nicht geladen werden.'; }
+
+    try {
+      const s = localStorage.getItem(THEME_STORAGE_KEY);
+      if (s === 'dark' || s === 'light') setTheme(s);
+      else if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) setTheme('dark');
+    } catch { if (!initError) initError = 'Design-Einstellung konnte nicht geladen werden.'; }
+
+    if (initError) setError(initError);
+  }, []);
+
+  const pinchStartDist = useRef(0);
+  const pinchStartFontSize = useRef(settings.arabicFontSize);
+  const pinchStartTranslationFontSize = useRef(settings.translationFontSize);
+
+  useEffect(() => {
+    try { localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(Array.from(favorites))); }
+    catch { setError('Favoriten konnten nicht gespeichert werden.'); }
+  }, [favorites]);
+
+  useEffect(() => {
+    try { localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings)); }
+    catch { setError('Einstellungen konnten nicht gespeichert werden.'); }
+  }, [settings]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    try { localStorage.setItem(THEME_STORAGE_KEY, theme); }
+    catch { setError('Design-Einstellung konnte nicht gespeichert werden.'); }
+  }, [theme]);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    if (language === 'ar') { html.setAttribute('lang', 'ar'); html.setAttribute('dir', 'rtl'); }
+    else { html.setAttribute('lang', language); html.setAttribute('dir', 'ltr'); }
+  }, [language]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (isSettingsOpen) setIsSettingsOpen(false);
+      else if (isDaySelectorOpen) setIsDaySelectorOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isSettingsOpen, isDaySelectorOpen]);
+
+  const handleSettingsChange = useCallback((newSettings: Partial<AppSettings>) => {
+    setSettings(prev => ({ ...prev, ...newSettings }));
+  }, []);
+
+  const toggleTheme = useCallback(() => setTheme(t => t === 'light' ? 'dark' : 'light'), []);
+
+  const handleNextDay = useCallback(() => setCurrentDayIndex(i => (i + 1) % DAYS_ORDER.length), []);
+  const handlePrevDay = useCallback(() => setCurrentDayIndex(i => (i - 1 + DAYS_ORDER.length) % DAYS_ORDER.length), []);
+
+  const handleSelectDay = (index: number) => {
+    setCurrentDayIndex(index);
+    setIsDaySelectorOpen(false);
+  };
+
+  const toggleFavorite = useCallback((duaId: string) => {
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (next.has(duaId)) next.delete(duaId); else next.add(duaId);
+      return next;
+    });
+  }, []);
+
+  const handleTabChange = useCallback((tab: BottomTab) => {
+    if (tab === 'duas') setActiveView('duas');
+    else if (tab === 'favorites') setActiveView('favorites');
+    else if (tab === 'days') setIsDaySelectorOpen(true);
+    else if (tab === 'settings') setIsSettingsOpen(true);
+  }, []);
+
+  const swipeHandlers = useSwipe({ onSwipedLeft: handleNextDay, onSwipedRight: handlePrevDay });
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    swipeHandlers.onTouchStart(e);
+    if (e.touches.length === 2) {
+      pinchStartDist.current = getDistance(e.touches);
+      pinchStartFontSize.current = settings.arabicFontSize;
+      pinchStartTranslationFontSize.current = settings.translationFontSize;
+    }
+  }, [settings.arabicFontSize, settings.translationFontSize, swipeHandlers]);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    swipeHandlers.onTouchMove(e);
+    if (e.touches.length === 2) {
+      const currentDist = getDistance(e.touches);
+      const scale = currentDist / pinchStartDist.current;
+      pinchStartDist.current = currentDist;
+      setSettings(prev => ({
+        ...prev,
+        arabicFontSize: Math.max(1.25, Math.min(3, prev.arabicFontSize * scale)),
+        translationFontSize: Math.max(0.75, Math.min(1.75, prev.translationFontSize * scale)),
+      }));
+    }
+  }, [swipeHandlers]);
+
+  const currentCollection = useMemo(() => {
+    if (!DUA_DATA?.length) return null;
+    return DUA_DATA[Math.max(0, Math.min(currentDayIndex, DUA_DATA.length - 1))];
+  }, [currentDayIndex]);
+
+  useEffect(() => {
+    if (!currentCollection) setError('Inhalt konnte nicht geladen werden. Bitte neu laden.');
+  }, [currentCollection]);
+
+  const activeTab: BottomTab = activeView === 'favorites' ? 'favorites' : 'duas';
+
+  return (
+    <div
+      className="app-container"
+      style={{ '--arabic-font-size': `${settings.arabicFontSize}rem` } as React.CSSProperties}
+    >
+      {error && <ErrorDisplay message={error} onDismiss={() => setError(null)} />}
+
+      {/* ── Header ── */}
+      <header style={{
+        background: 'var(--hza-green)',
+        padding: '18px 20px 14px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 600, fontSize: 19, color: '#fff', lineHeight: 1.1, letterSpacing: '0.01em' }}>
+            Hizbul Azam
+          </span>
+          <span style={{ fontFamily: "'Amiri', serif", fontSize: 15, color: 'var(--hza-gold)', direction: 'rtl', lineHeight: 1.4 }}>
+            حِزْبُ الأَعْظَم
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
+          <LanguageSelector currentLanguage={language} onLanguageChange={setLanguage} />
+        </div>
+      </header>
+
+      {/* ── Main content ── */}
+      {activeView === 'duas' ? (
+        <>
+          {!currentCollection ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", color: 'var(--hza-muted)', textAlign: 'center' }}>
+                Inhalt konnte nicht geladen werden. Bitte neu laden.
+              </p>
+            </div>
+          ) : (
+            <>
+              <DayNavigator
+                dayName={currentCollection.name[language]}
+                dayNameAr={language !== 'ar' ? currentCollection.name['ar'] : undefined}
+                onPrev={handlePrevDay}
+                onNext={handleNextDay}
+                onDayNameClick={() => setIsDaySelectorOpen(true)}
+                isRtl={language === 'ar'}
+                currentDayIndex={currentDayIndex}
+                totalDays={DUA_DATA.length}
+              />
+              <div
+                style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={swipeHandlers.onTouchEnd}
+              >
+                <DuaCard
+                  collection={currentCollection}
+                  language={language}
+                  favorites={favorites}
+                  onToggleFavorite={toggleFavorite}
+                  showTranslation={settings.showTranslation}
+                  showFavorites={settings.showFavorites}
+                  showShare={settings.showShare}
+                  translationFontSize={settings.translationFontSize}
+                />
+              </div>
+            </>
+          )}
+        </>
+      ) : (
+        <FavoritesView
+          favorites={favorites}
+          language={language}
+          onToggleFavorite={toggleFavorite}
+          showShare={settings.showShare}
+          translationFontSize={settings.translationFontSize}
+          showTranslation={settings.showTranslation}
+        />
+      )}
+
+      {/* ── Bottom Nav ── */}
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} language={language} />
+
+      {/* ── Modals ── */}
+      <React.Suspense fallback={null}>
+        <DaySelectorModal
+          isOpen={isDaySelectorOpen}
+          onClose={() => setIsDaySelectorOpen(false)}
+          onSelectDay={handleSelectDay}
+          days={DUA_DATA.map(d => d.name[language])}
+          currentIndex={currentDayIndex}
+          language={language}
+        />
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          settings={settings}
+          onSettingsChange={handleSettingsChange}
+          language={language}
+        />
+      </React.Suspense>
+    </div>
+  );
 };
 
 export default App;

@@ -18,10 +18,10 @@ interface SettingsModalProps {
 }
 
 const SETTINGS_T = {
-    en: { title: 'Settings', showFavorites: 'Show Favorite Buttons', showShare: 'Show Share Buttons', arabicFont: 'Arabic Font Size', translationFont: 'Translation Font Size' },
-    de: { title: 'Einstellungen', showFavorites: 'Favoriten-Buttons anzeigen', showShare: 'Teilen-Buttons anzeigen', arabicFont: 'Arabische Schriftgröße', translationFont: 'Übersetzungsschriftgröße' },
-    fr: { title: 'Paramètres', showFavorites: 'Afficher les boutons de favoris', showShare: 'Afficher les boutons de partage', arabicFont: 'Taille de police arabe', translationFont: 'Taille de police de traduction' },
-    ar: { title: 'الإعدادات', showFavorites: 'إظهار أزرار المفضلة', showShare: 'إظهار أزرار المشاركة', arabicFont: 'حجم الخط العربي', translationFont: 'حجم خط الترجمة' },
+    en: { title: 'Settings', showFavorites: 'Show Favorite Buttons', showShare: 'Show Share Buttons', showTranslation: 'Show Translation', arabicFont: 'Arabic Font Size', translationFont: 'Translation Font Size' },
+    de: { title: 'Einstellungen', showFavorites: 'Favoriten-Buttons anzeigen', showShare: 'Teilen-Buttons anzeigen', showTranslation: 'Übersetzung anzeigen', arabicFont: 'Arabische Schriftgröße', translationFont: 'Übersetzungsschriftgröße' },
+    fr: { title: 'Paramètres', showFavorites: 'Afficher les boutons de favoris', showShare: 'Afficher les boutons de partage', showTranslation: 'Afficher la traduction', arabicFont: 'Taille de police arabe', translationFont: 'Taille de police de traduction' },
+    ar: { title: 'الإعدادات', showFavorites: 'إظهار أزرار المفضلة', showShare: 'إظهار أزرار المشاركة', showTranslation: 'عرض الترجمة', arabicFont: 'حجم الخط العربي', translationFont: 'حجم خط الترجمة' },
 };
 
 const Toggle: React.FC<{ checked: boolean; onChange: (checked: boolean) => void; label: string }> = ({ checked, onChange, label }) => (
@@ -82,6 +82,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
                             checked={settings.showShare}
                             onChange={(value) => onSettingsChange({ showShare: value })}
                         />
+                        {language !== 'ar' && (
+                            <Toggle
+                                label={t.showTranslation}
+                                checked={settings.showTranslation}
+                                onChange={(value) => onSettingsChange({ showTranslation: value })}
+                            />
+                        )}
                     </div>
                     <hr className="border-slate-200 dark:border-slate-700" />
                     <div className="space-y-3">

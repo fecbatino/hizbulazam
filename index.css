@@ -1,0 +1,38 @@
+:root {
+  --hza-green: #1B4332;
+  --hza-green-light: #E1F5EE;
+  --hza-green-mid: #0F6E56;
+  --hza-gold: #D4A843;
+  --hza-bg: #F7F5F0;
+  --hza-card: #ffffff;
+  --hza-border: #E0DDD5;
+  --hza-text: #1a1a18;
+  --hza-muted: #5F5E5A;
+  --hza-hint: #888780;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--hza-bg);
+  color: var(--hza-text);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.app-container {
+  --arabic-font-size: 1.9rem;
+  min-height: 100svh;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--hza-bg);
+}

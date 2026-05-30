@@ -1,44 +1,85 @@
-
 import React from 'react';
 
 interface DayNavigatorProps {
   dayName: string;
+  dayNameAr?: string;
   onPrev: () => void;
   onNext: () => void;
   onDayNameClick: () => void;
   isRtl?: boolean;
+  currentDayIndex: number;
+  totalDays: number;
 }
 
-const ArrowIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-5 h-5 ${className ?? ''}`}>
-    <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
-  </svg>
-);
+const arrowStyle: React.CSSProperties = {
+  width: 36,
+  height: 36,
+  borderRadius: '50%',
+  border: '1px solid var(--hza-border)',
+  background: 'transparent',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  color: 'var(--hza-muted)',
+  fontSize: 20,
+  lineHeight: 1,
+  flexShrink: 0,
+};
 
-const ChevronDownIcon = ({ className }: { className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-5 h-5 ${className ?? ''}`}>
-        <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
-    </svg>
-);
-
-export const DayNavigator: React.FC<DayNavigatorProps> = ({ dayName, onPrev, onNext, onDayNameClick, isRtl = false }) => {
+export const DayNavigator: React.FC<DayNavigatorProps> = ({
+  dayName,
+  dayNameAr,
+  onPrev,
+  onNext,
+  onDayNameClick,
+  isRtl = false,
+  currentDayIndex,
+  totalDays,
+}) => {
   const leftHandler = isRtl ? onNext : onPrev;
   const rightHandler = isRtl ? onPrev : onNext;
 
   return (
-    <div className="flex items-center justify-between w-full p-4">
-      <button onClick={leftHandler} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors duration-200 text-slate-500 dark:text-slate-400">
-        <span className="sr-only">Previous Day</span>
-        <ArrowIcon className={isRtl ? 'transform rotate-180' : undefined} />
-      </button>
-      <button onClick={onDayNameClick} className="flex items-center gap-1 px-4 py-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors duration-200">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 tracking-wide">{dayName}</h2>
-        <ChevronDownIcon className="text-slate-500 dark:text-slate-400" />
-      </button>
-      <button onClick={rightHandler} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors duration-200 text-slate-500 dark:text-slate-400">
-        <span className="sr-only">Next Day</span>
-        <ArrowIcon className={isRtl ? undefined : 'transform rotate-180'} />
-      </button>
+    <div style={{ background: 'var(--hza-card)', borderBottom: '1px solid var(--hza-border)', padding: '14px 16px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <button onClick={leftHandler} style={arrowStyle} aria-label="Previous Day">
+          {isRtl ? '›' : '‹'}
+        </button>
+
+        <button
+          onClick={onDayNameClick}
+          style={{ textAlign: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 12px', borderRadius: 8 }}
+        >
+          <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 600, fontSize: 18, color: 'var(--hza-text)', lineHeight: 1.2 }}>
+            {dayName}
+          </div>
+          {dayNameAr && (
+            <div style={{ fontFamily: "'Amiri', serif", fontSize: 14, color: 'var(--hza-gold)', direction: 'rtl', lineHeight: 1.6 }}>
+              {dayNameAr}
+            </div>
+          )}
+        </button>
+
+        <button onClick={rightHandler} style={arrowStyle} aria-label="Next Day">
+          {isRtl ? '‹' : '›'}
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+        {Array.from({ length: totalDays }, (_, i) => (
+          <div
+            key={i}
+            style={{
+              height: 6,
+              width: i === currentDayIndex ? 14 : 6,
+              borderRadius: i === currentDayIndex ? 3 : '50%',
+              background: i === currentDayIndex ? 'var(--hza-green)' : 'var(--hza-border)',
+              transition: 'all 0.2s ease',
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 };

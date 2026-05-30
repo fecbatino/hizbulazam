@@ -34,7 +34,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ currentLangu
         gap: '6px',
       }}
     >
-      <span>🌐</span>
+      <span>●</span>
       <span>{LABELS[currentLanguage] ?? currentLanguage.toUpperCase()}</span>
     </button>
   );
