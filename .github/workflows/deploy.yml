@@ -6,29 +6,35 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          port: ${{ secrets.PORT }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            # 1. Syntax-Fehler in der .bashrc reparieren
-            sed -i "s/alias dc='docker-compose'#/alias dc='docker-compose' #/g" ~/.bashrc
-            
-            # 2. Projekt-Ordner sicherstellen und klonen, falls er nicht existiert
-            mkdir -p /opt/stacks
-            if [ ! -d "/opt/stacks/hizbulazam-main/.git" ]; then
-              cd /opt/stacks
-              git clone https://github.com/fecbatino/hizbulazam.git hizbulazam-main
-            fi
-            
-            # 3. App aktualisieren und bauen
-            cd /opt/stacks/hizbulazam-main
-            git pull origin main
-            npm install
-            npm run build
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${{ secrets.PORT }} -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy via rsync
+        run: |
+          rsync -avz --delete \
+            -e "ssh -p ${{ secrets.PORT }}" \
+            dist/ \
+            ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/var/www/hza/
