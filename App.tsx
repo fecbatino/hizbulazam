@@ -109,7 +109,7 @@ const App: React.FC = () => {
     };
 
     const [currentDayIndex, setCurrentDayIndex] = useState<number>(getInitialDayIndex);
-    const [language, setLanguage] = useState<Language>('en');
+    const [language, setLanguage] = useState<Language>('de');
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
     const [settings, setSettings] = useState<AppSettings>(defaultSettings);
     const [isDaySelectorOpen, setIsDaySelectorOpen] = useState<boolean>(false);

@@ -7,29 +7,35 @@ interface LanguageSelectorProps {
   onLanguageChange: (language: Language) => void;
 }
 
-const LANGUAGES: { code: Language; label: string }[] = [
-  { code: 'en', label: 'EN' },
-  { code: 'de', label: 'DE' },
-  { code: 'fr', label: 'FR' },
-  { code: 'ar', label: 'عر' },
-];
+const CYCLE: Language[] = ['de', 'en', 'fr'];
+const LABELS: Record<Language, string> = { de: 'DE', en: 'EN', fr: 'FR', ar: 'عر' };
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ currentLanguage, onLanguageChange }) => {
+  const handleClick = () => {
+    const idx = CYCLE.indexOf(currentLanguage);
+    const next = CYCLE[(idx === -1 ? 0 : idx + 1) % CYCLE.length];
+    onLanguageChange(next);
+  };
+
   return (
-    <div className="flex items-center space-x-2 rounded-full bg-slate-200 dark:bg-slate-700 p-1">
-      {LANGUAGES.map(({ code, label }) => (
-        <button
-          key={code}
-          onClick={() => onLanguageChange(code)}
-          className={`px-3 py-1 text-sm font-semibold rounded-full transition-colors duration-300 ${
-            currentLanguage === code
-              ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-900 dark:text-slate-100'
-              : 'bg-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
-          }`}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
+    <button
+      onClick={handleClick}
+      aria-label={`Language: ${currentLanguage.toUpperCase()}, click to cycle`}
+      style={{
+        background: 'rgba(0,0,0,0.2)',
+        border: '1px solid rgba(255,255,255,0.3)',
+        borderRadius: '8px',
+        padding: '8px 14px',
+        color: 'white',
+        fontWeight: 600,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+      }}
+    >
+      <span>🌐</span>
+      <span>{LABELS[currentLanguage] ?? currentLanguage.toUpperCase()}</span>
+    </button>
   );
 };
