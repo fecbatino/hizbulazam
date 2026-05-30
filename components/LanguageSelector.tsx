@@ -11,6 +11,7 @@ const LANGUAGES: { code: Language; label: string }[] = [
   { code: 'en', label: 'EN' },
   { code: 'de', label: 'DE' },
   { code: 'fr', label: 'FR' },
+  { code: 'ar', label: 'عر' },
 ];
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ currentLanguage, onLanguageChange }) => {

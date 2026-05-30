@@ -197,6 +197,17 @@ const App: React.FC = () => {
         }
     }, [theme]);
 
+    useEffect(() => {
+        const html = document.documentElement;
+        if (language === 'ar') {
+            html.setAttribute('lang', 'ar');
+            html.setAttribute('dir', 'rtl');
+        } else {
+            html.setAttribute('lang', language);
+            html.setAttribute('dir', 'ltr');
+        }
+    }, [language]);
+
     const handleSettingsChange = useCallback((newSettings: Partial<AppSettings>) => {
         setSettings((prev: AppSettings) => ({ ...prev, ...newSettings }));
     }, []);

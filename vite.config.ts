@@ -19,8 +19,8 @@ export default defineConfig(({ mode }) => {
             name: 'Daily Dua - Hizbul Azam',
             short_name: 'Daily Dua',
             description: 'Daily Islamic supplications from the Hizb collection',
-            theme_color: '#ffffff',
-            background_color: '#ffffff',
+            theme_color: '#1a7a4a',
+            background_color: '#f0f7f4',
             display: 'standalone',
             start_url: '/',
             icons: [

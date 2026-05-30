@@ -30,6 +30,7 @@ const getSourceContext = (dua: DuaItem, lang: Language) => {
   switch (lang) {
     case 'de': return dua.source_context_de;
     case 'fr': return dua.source_context_fr;
+    case 'ar': return dua.source_context_en;
     case 'en':
     default: return dua.source_context_en;
   }
@@ -39,6 +40,7 @@ const getTranslation = (dua: DuaItem, lang: Language) => {
   switch (lang) {
     case 'de': return dua.translation_de;
     case 'fr': return dua.translation_fr;
+    case 'ar': return '';
     case 'en':
     default: return dua.translation_en;
   }
@@ -49,7 +51,8 @@ const ShareButton: React.FC<{ dua: DuaItem; language: Language }> = ({ dua, lang
   const handleShare = async () => {
     const translation = getTranslation(dua, language);
     const sourceContext = getSourceContext(dua, language);
-    const shareText = `"${dua.arabic_text}"\n\nTranslation (${language.toUpperCase()}): "${translation}"\n\nSource: ${sourceContext}`;
+    const translationLine = translation ? `\n\nTranslation (${language.toUpperCase()}): "${translation}"` : '';
+    const shareText = `"${dua.arabic_text}"${translationLine}\n\nSource: ${sourceContext}`;
 
     if (navigator.share) {
       try {
@@ -123,7 +126,7 @@ export const DuaCard = React.memo<DuaCardProps>(
               </div>
             </div>
 
-            {showTranslation && (
+            {showTranslation && language !== 'ar' && (
               <div>
                 <hr className="border-slate-200 dark:border-slate-700 my-4" />
                 <p className="text-slate-600 dark:text-slate-300 italic text-base" style={{ fontSize: `${translationFontSize}rem` }}>

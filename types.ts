@@ -1,5 +1,5 @@
 
-export type Language = 'en' | 'de' | 'fr';
+export type Language = 'en' | 'de' | 'fr' | 'ar';
 
 export type DayOfWeek = 'friday' | 'saturday' | 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday';
 

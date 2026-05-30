@@ -5,7 +5,7 @@ export const DUA_DATA: DuaCollection[] = [
   // Friday
   {
     day: 'friday',
-    name: { en: 'Friday', de: 'Freitag', fr: 'Vendredi' },
+    name: { en: 'Friday', de: 'Freitag', fr: 'Vendredi', ar: 'يوم الجمعة' },
     hizbTitle: 'الحزب الاول - يوم الجمعة',
     duas: [
       {
@@ -374,7 +374,7 @@ export const DUA_DATA: DuaCollection[] = [
   // Saturday
   {
     day: 'saturday',
-    name: { en: 'Saturday', de: 'Samstag', fr: 'Samedi' },
+    name: { en: 'Saturday', de: 'Samstag', fr: 'Samedi', ar: 'يوم السبت' },
     hizbTitle: 'الْحِزْبُ الثَّانِي - يَوْمُ السَّبْتِ',
     duas: [
       {
@@ -736,7 +736,7 @@ export const DUA_DATA: DuaCollection[] = [
   // Sunday
   {
     day: 'sunday',
-    name: { en: 'Sunday', de: 'Sonntag', fr: 'Dimanche' },
+    name: { en: 'Sunday', de: 'Sonntag', fr: 'Dimanche', ar: 'يوم الأحد' },
     hizbTitle: 'اَلْحِزْبُ الثَّالِثُ - يَوْمُ الْأَحَدِ',
     duas: [
       {
@@ -1103,7 +1103,7 @@ export const DUA_DATA: DuaCollection[] = [
   // Monday
   {
     day: 'monday',
-    name: { en: 'Monday', de: 'Montag', fr: 'Lundi' },
+    name: { en: 'Monday', de: 'Montag', fr: 'Lundi', ar: 'يوم الاثنين' },
     hizbTitle: 'اَلْحِزْبُ الرَّابِعُ - يَوْمُ الْاِثْنَيْنِ',
     duas: [
       {
@@ -1478,7 +1478,7 @@ export const DUA_DATA: DuaCollection[] = [
   // Tuesday
   {
     day: 'tuesday',
-    name: { en: 'Tuesday', de: 'Dienstag', fr: 'Mardi' },
+    name: { en: 'Tuesday', de: 'Dienstag', fr: 'Mardi', ar: 'يوم الثلاثاء' },
     hizbTitle: 'الْحِزْبُ الْخَامِسُ - يَوْمُ الثُّلَاثَاءِ',
     duas: [
       {
@@ -1832,7 +1832,7 @@ export const DUA_DATA: DuaCollection[] = [
   // Wednesday
   {
     day: 'wednesday',
-    name: { en: 'Wednesday', de: 'Mittwoch', fr: 'Mercredi' },
+    name: { en: 'Wednesday', de: 'Mittwoch', fr: 'Mercredi', ar: 'يوم الأربعاء' },
     hizbTitle: 'اَلْحِزْبُ السَّادِسُ - يَوْمُ الْأَرْبِعَاءِ',
     duas: [
       {
@@ -2193,7 +2193,7 @@ export const DUA_DATA: DuaCollection[] = [
   // Thursday
   {
     day: 'thursday',
-    name: { en: 'Thursday', de: 'Donnerstag', fr: 'Jeudi' },
+    name: { en: 'Thursday', de: 'Donnerstag', fr: 'Jeudi', ar: 'يوم الخميس' },
     hizbTitle: 'اَلْحِزْبُ السَّابِعُ - يَوْمُ الْخَمِيسِ',
     duas: [
       {
