@@ -32,6 +32,12 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p ${{ secrets.PORT }} -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
 
+      - name: Create target directory on server
+        run: |
+          ssh -p ${{ secrets.PORT }} \
+            ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
+            "mkdir -p /var/www/hza"
+
       - name: Deploy via rsync
         run: |
           rsync -avz --delete \
