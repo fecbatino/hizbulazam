@@ -208,6 +208,17 @@ const App: React.FC = () => {
         }
     }, [language]);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key !== 'Escape') return;
+            if (isAboutOpen) setIsAboutOpen(false);
+            else if (isSettingsOpen) setIsSettingsOpen(false);
+            else if (isDaySelectorOpen) setIsDaySelectorOpen(false);
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isAboutOpen, isSettingsOpen, isDaySelectorOpen]);
+
     const handleSettingsChange = useCallback((newSettings: Partial<AppSettings>) => {
         setSettings((prev: AppSettings) => ({ ...prev, ...newSettings }));
     }, []);
