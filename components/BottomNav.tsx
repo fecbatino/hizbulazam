@@ -21,7 +21,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, la
     role="navigation"
     aria-label="Main navigation"
     style={{
-      background: '#fff',
+      background: 'var(--hza-card)',
       borderTop: '1px solid var(--hza-border)',
       display: 'flex',
       padding: '8px 0 16px',

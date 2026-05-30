@@ -11,6 +11,17 @@
   --hza-hint: #888780;
 }
 
+html.dark {
+  --hza-bg: #1A1A18;
+  --hza-card: #252522;
+  --hza-border: #333330;
+  --hza-text: #EDE9E0;
+  --hza-muted: #9A9893;
+  --hza-hint: #6B6A65;
+  --hza-green-light: #1A3328;
+  --hza-green-mid: #3AAE88;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
