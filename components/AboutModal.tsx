@@ -49,7 +49,20 @@ const translations = {
             "<strong>Thème :</strong> Basculez entre les thèmes clair et sombre avec l'icône soleil/lune (☀️/🌙).",
         ],
         close: "Fermer",
-    }
+    },
+    ar: {
+        title: "حول Daily Dua",
+        description: "تطبيق حديث يعمل دون اتصال بالإنترنت للأدعية اليومية. يقدم أدعية يومية من السبت إلى الجمعة بلغات متعددة بواجهة نظيفة وبسيطة وسهلة الاستخدام.",
+        howToTitle: "كيفية استخدام التطبيق",
+        usagePoints: [
+            '<strong>التنقل:</strong> اسحب لليسار أو لليمين للتنقل بين الأيام.',
+            '<strong>اختيار اليوم:</strong> اضغط على اسم اليوم (مثل "الجمعة") للانتقال مباشرة إلى يوم محدد.',
+            '<strong>التكبير:</strong> استخدم إيماءة "القرص للتكبير" بإصبعين لضبط حجم الخط العربي.',
+            '<strong>الإعدادات:</strong> انقر على أيقونة الترس (⚙️) لضبط حجم الخط أو إظهار/إخفاء أزرار المفضلة والمشاركة.',
+            '<strong>المظهر:</strong> التبديل بين المظهر الفاتح والداكن بأيقونة الشمس/القمر (☀️/🌙).',
+        ],
+        close: "إغلاق",
+    },
 };
 
 export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, language }) => {

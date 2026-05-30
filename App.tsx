@@ -335,6 +335,7 @@ const App: React.FC = () => {
                                 onPrev={handlePrevDay}
                                 onNext={handleNextDay}
                                 onDayNameClick={() => setIsDaySelectorOpen(true)}
+                                isRtl={language === 'ar'}
                             />
                         </div>
                         <div className="flex-grow overflow-hidden">
