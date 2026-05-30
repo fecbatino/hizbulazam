@@ -43,10 +43,10 @@ Replaces the existing workflow entirely.
 3. `npm ci`
 4. `npm run build`
 5. SSH key setup from `secrets.SSH_KEY` into `~/.ssh/id_rsa`
-6. `ssh-keyscan` to populate `known_hosts` from `secrets.HOST`
-7. `rsync -avz --delete dist/ $USERNAME@$HOST:/var/www/hza/`
+6. `ssh-keyscan -p $PORT` to populate `known_hosts` from `secrets.HOST`
+7. `rsync -avz --delete -e "ssh -p $PORT" dist/ $USERNAME@$HOST:/var/www/hza/`
 
-Uses existing secrets — no new secrets needed.
+Uses existing secrets (`HOST`, `USERNAME`, `PORT`, `SSH_KEY`) — no new secrets needed.
 
 ### 2. Server Nginx Configuration (`nginx.conf` in repo root)
 
@@ -82,7 +82,7 @@ Generate 192×192 and 512×512 PNG icons from `public/icon.svg` using `sharp`.
 **`vite.config.ts` manifest update:**
 Add both PNGs to the `icons` array with correct `sizes` and `purpose` values. SVG entries remain as fallback.
 
-**`scripts/generate-icons.cjs`:** Node script using `sharp` to rasterize the SVG. Run once locally, commit the output PNGs. `sharp` added as devDependency.
+**`scripts/generate-icons.cjs`:** Node script using `sharp` (latest stable, e.g. `^0.34`) to rasterize the SVG at 192×192 and 512×512. Run once locally, commit the output PNGs. `sharp` added as devDependency.
 
 ## Data Flow
 
