@@ -1,10 +1,11 @@
 import React from 'react';
+import { Language } from '../types';
 
 export interface AppSettings {
     showFavorites: boolean;
     showShare: boolean;
-    arabicFontSize: number; // Using a numeric value like rem
-    translationFontSize: number; // Using a numeric value like rem
+    arabicFontSize: number;
+    translationFontSize: number;
     showTranslation: boolean;
 }
 
@@ -13,7 +14,15 @@ interface SettingsModalProps {
     onClose: () => void;
     settings: AppSettings;
     onSettingsChange: (newSettings: Partial<AppSettings>) => void;
+    language: Language;
 }
+
+const SETTINGS_T = {
+    en: { title: 'Settings', showFavorites: 'Show Favorite Buttons', showShare: 'Show Share Buttons', arabicFont: 'Arabic Font Size', translationFont: 'Translation Font Size' },
+    de: { title: 'Einstellungen', showFavorites: 'Favoriten-Buttons anzeigen', showShare: 'Teilen-Buttons anzeigen', arabicFont: 'Arabische Schriftgröße', translationFont: 'Übersetzungsschriftgröße' },
+    fr: { title: 'Paramètres', showFavorites: 'Afficher les boutons de favoris', showShare: 'Afficher les boutons de partage', arabicFont: 'Taille de police arabe', translationFont: 'Taille de police de traduction' },
+    ar: { title: 'الإعدادات', showFavorites: 'إظهار أزرار المفضلة', showShare: 'إظهار أزرار المشاركة', arabicFont: 'حجم الخط العربي', translationFont: 'حجم خط الترجمة' },
+};
 
 const Toggle: React.FC<{ checked: boolean; onChange: (checked: boolean) => void; label: string }> = ({ checked, onChange, label }) => (
     <label className="flex items-center justify-between cursor-pointer">
@@ -26,40 +35,50 @@ const Toggle: React.FC<{ checked: boolean; onChange: (checked: boolean) => void;
     </label>
 );
 
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, settings, onSettingsChange, language }) => {
+    if (!isOpen) return null;
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, settings, onSettingsChange }) => {
-    if (!isOpen) {
-        return null;
-    }
+    const t = SETTINGS_T[language] ?? SETTINGS_T.en;
 
     const handleFontSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         onSettingsChange({ arabicFontSize: parseFloat(e.target.value) });
     };
 
     return (
-        <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300" 
+        <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300"
             onClick={onClose}
             role="dialog"
             aria-modal="true"
             aria-labelledby="settings-title"
         >
-            <div 
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 w-full max-w-sm" 
+            <div
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 w-full max-w-sm"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h3 id="settings-title" className="font-bold text-lg mb-6 text-slate-800 dark:text-slate-100 text-center">
-                    Settings
-                </h3>
+                <div className="flex items-center justify-between mb-6">
+                    <h3 id="settings-title" className="font-bold text-lg text-slate-800 dark:text-slate-100">
+                        {t.title}
+                    </h3>
+                    <button
+                        onClick={onClose}
+                        className="p-1 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                        aria-label="Close settings"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22z" />
+                        </svg>
+                    </button>
+                </div>
                 <div className="space-y-6">
                     <div className="space-y-4">
-                        <Toggle 
-                            label="Show Favorite Buttons"
+                        <Toggle
+                            label={t.showFavorites}
                             checked={settings.showFavorites}
                             onChange={(value) => onSettingsChange({ showFavorites: value })}
                         />
-                        <Toggle 
-                            label="Show Share Buttons"
+                        <Toggle
+                            label={t.showShare}
                             checked={settings.showShare}
                             onChange={(value) => onSettingsChange({ showShare: value })}
                         />
@@ -67,11 +86,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
                     <hr className="border-slate-200 dark:border-slate-700" />
                     <div className="space-y-3">
                         <label htmlFor="font-size-slider" className="block text-slate-700 dark:text-slate-300">
-                            Arabic Font Size
+                            {t.arabicFont}
                         </label>
                         <div className="flex items-center gap-4">
                             <span className="text-sm text-slate-500">A</span>
-                             <input
+                            <input
                                 id="font-size-slider"
                                 type="range"
                                 min="1.25"
@@ -86,11 +105,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
                     </div>
                     <div className="space-y-3">
                         <label htmlFor="translation-font-size-slider" className="block text-slate-700 dark:text-slate-300">
-                            Translation Font Size
+                            {t.translationFont}
                         </label>
                         <div className="flex items-center gap-4">
                             <span className="text-sm text-slate-500">A</span>
-                                <input
+                            <input
                                 id="translation-font-size-slider"
                                 type="range"
                                 min="0.8"

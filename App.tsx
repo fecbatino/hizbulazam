@@ -312,7 +312,9 @@ const App: React.FC = () => {
                     <button onClick={() => setIsAboutOpen(true)} className="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700 transition-colors" aria-label="About this app">
                         <InformationCircleIcon />
                     </button>
-                    <TranslationToggleButton isVisible={settings.showTranslation} onToggle={() => handleSettingsChange({ showTranslation: !settings.showTranslation })} />
+                    {language !== 'ar' && (
+                        <TranslationToggleButton isVisible={settings.showTranslation} onToggle={() => handleSettingsChange({ showTranslation: !settings.showTranslation })} />
+                    )}
                     <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
                 </div>
             </header>
@@ -355,12 +357,13 @@ const App: React.FC = () => {
             </main>
             
             <React.Suspense fallback={null}>
-                <DaySelectorModal 
+                <DaySelectorModal
                     isOpen={isDaySelectorOpen}
                     onClose={() => setIsDaySelectorOpen(false)}
                     onSelectDay={handleSelectDay}
                     days={DUA_DATA.map(d => d.name[language])}
                     currentIndex={currentDayIndex}
+                    language={language}
                 />
 
                 <SettingsModal
@@ -368,6 +371,7 @@ const App: React.FC = () => {
                     onClose={() => setIsSettingsOpen(false)}
                     settings={settings}
                     onSettingsChange={handleSettingsChange}
+                    language={language}
                 />
             </React.Suspense>
             
