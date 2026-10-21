@@ -27,3 +27,6 @@ dist-ssr
 !public/data/*.json
 !public/fonts/*.woff2
 !public/fonts/fonts.css
+
+# Laufzeit-Konfiguration (Pfad zum Webroot)
+.env
