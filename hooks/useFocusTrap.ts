@@ -21,8 +21,15 @@ export function useFocusTrap<T extends HTMLElement>(isOpen: boolean, onClose: ()
         el => el.offsetParent !== null || el === document.activeElement
       );
 
-    const first = visible()[0];
-    first?.focus();
+    if (!node.hasAttribute('tabindex')) node.setAttribute('tabindex', '-1');
+    // Erst nach dem ersten Frame sind die Kinder layoutet (offsetParent gesetzt);
+    // ohne diesen Aufschub landet der Fokus bei Body.
+    const focusFirst = () => {
+      const first = visible()[0];
+      if (first) first.focus();
+      else node.focus();
+    };
+    const raf = window.requestAnimationFrame(focusFirst);
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -46,6 +53,7 @@ export function useFocusTrap<T extends HTMLElement>(isOpen: boolean, onClose: ()
 
     node.addEventListener('keydown', onKeyDown);
     return () => {
+      window.cancelAnimationFrame(raf);
       node.removeEventListener('keydown', onKeyDown);
       if (previous && typeof previous.focus === 'function') previous.focus();
     };

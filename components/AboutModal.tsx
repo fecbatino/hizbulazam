@@ -1,5 +1,6 @@
 import React from 'react';
 import { Language } from '../types';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface AboutModalProps {
     isOpen: boolean;
@@ -66,6 +67,7 @@ const translations = {
 };
 
 export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, language }) => {
+    const trapRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);
     if (!isOpen) {
         return null;
     }
@@ -76,6 +78,8 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, languag
         <div 
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300" 
             onClick={onClose}
+            ref={trapRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby="about-title"

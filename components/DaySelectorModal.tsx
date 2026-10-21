@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Language } from '../types';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface DaySelectorModalProps {
     isOpen: boolean;
@@ -19,12 +20,15 @@ const DAY_SELECTOR_T: Record<Language, string> = {
 };
 
 export const DaySelectorModal: React.FC<DaySelectorModalProps> = ({ isOpen, onClose, onSelectDay, days, currentIndex, language }) => {
+    const trapRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);
     if (!isOpen) return null;
 
     return (
         <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300"
             onClick={onClose}
+            ref={trapRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby="day-selector-title"

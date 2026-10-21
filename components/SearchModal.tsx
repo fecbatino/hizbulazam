@@ -107,6 +107,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, langu
     >
       <div
         ref={trapRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={t.title}

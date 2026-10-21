@@ -1,5 +1,6 @@
 import React from 'react';
 import { Language } from '../types';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 export interface AppSettings {
     showFavorites: boolean;
@@ -39,6 +40,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
     if (!isOpen) return null;
 
     const t = SETTINGS_T[language] ?? SETTINGS_T.en;
+    const trapRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);
+
 
     const handleFontSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         onSettingsChange({ arabicFontSize: parseFloat(e.target.value) });
@@ -48,6 +51,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
         <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300"
             onClick={onClose}
+            ref={trapRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby="settings-title"
