@@ -1,13 +1,14 @@
 name: Deploy to Hetzner
 
 on:
+  pull_request:
   push:
     branches:
       - main
   workflow_dispatch:
 
 concurrency:
-  group: deploy-prod
+  group: hza-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -37,6 +38,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Browser installieren
+        run: npx playwright install --with-deps chromium
+
+      - name: Browserprüfungen
+        run: npm run test:e2e
+
       - name: Build-Artefakte sichern
         uses: actions/upload-artifact@v4
         with:
@@ -47,9 +54,12 @@ jobs:
   deploy:
     name: Ausliefern
     needs: verify
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: production
     steps:
+      - uses: actions/checkout@v4
+
       - name: Build-Artefakte holen
         uses: actions/download-artifact@v4
         with:
@@ -65,12 +75,15 @@ jobs:
 
       - name: Ausliefern
         run: |
+          set -euo pipefail
           ssh -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
-            "mkdir -p /var/www/hza"
-          rsync -avz --delete \
+            "mkdir -p /opt/stacks/hizbulazam/releases/${GITHUB_SHA}"
+          rsync -avz \
             -e "ssh -p ${{ secrets.PORT }}" \
             dist/ \
-            ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/var/www/hza/
+            ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/opt/stacks/hizbulazam/releases/${GITHUB_SHA}/
+          ssh -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
+            "bash -s -- ${GITHUB_SHA}" < deploy/publish.sh
 
       - name: Smoke-Test
         run: |
@@ -80,4 +93,6 @@ jobs:
             echo "${path} -> ${code}"
             [ "$code" = "200" ] || exit 1
           done
+          deployed=$(curl -fsS "https://hza.fechal-batakpale.com/deployed-sha.txt?v=${GITHUB_SHA}")
+          [ "$deployed" = "$GITHUB_SHA" ] || exit 1
           echo "Smoke-Test bestanden"

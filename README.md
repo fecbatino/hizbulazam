@@ -1,260 +1,72 @@
-# Daily Dua – Hizbul Azam
+# Hizbul Azam
 
-A modern, responsive web application that brings daily Islamic supplications (duas) from the Hizb collection to your fingertips. Built with React and TypeScript, this app helps you engage with authentic, graded duas for each day of the week.
+PWA für die tägliche Lektüre des Hizbul Azam: arabische Texte, Übersetzungen in Deutsch, Englisch und Französisch, Quellenangaben, Suche und lokale Favoriten.
 
----
+## Lesen und Navigation
 
-## Features
+- Tage ausdrücklich über die Pfeile oder die Tagesauswahl wechseln. Scrollen und native Zoomgesten wechseln keinen Tag.
+- Die letzte sichtbare Dua und ihre Position werden pro Tag auf dem Gerät gespeichert, auch beim Wechsel zu Favoriten oder nach einem Neustart.
+- Die Tagesauswahl bietet „Tagesanfang“, um bewusst von vorne zu lesen.
+- Arabische Schriftgröße und Übersetzungsgröße sind in den Einstellungen unabhängig wählbar.
+- Sprache, Favoriten, Schriftgrößen und Farbschema bleiben lokal gespeichert.
+- Dialoge sperren den Seitenhintergrund, behalten den Tastaturfokus und stellen ihn beim Schließen wieder her.
 
-✨ **Daily Duas**  
-Access a curated collection of authentic Islamic supplications organized by day of the week (starting with Friday).
+## Offline und Updates
 
-🌍 **Multi-Language Support**  
-Read duas and translations in English, German, and French. Switch languages seamlessly with a single click.
+In den Einstellungen kann die gesamte Woche einschließlich Suche und Schriften heruntergeladen werden. Erst nach erfolgreicher Prüfung aller Dateien erscheint die Bestätigung. Unterbrochene Downloads können wiederholt werden. Browser dürfen gespeicherte Daten bei Speicherknappheit entfernen; der Status wird beim Öffnen erneut geprüft.
 
-📱 **Touch-Friendly Navigation**  
-- **Swipe left/right** to navigate between days
-- **Pinch to zoom** Arabic text for comfortable reading at any size
+Tagesdaten und Schriften liegen im Build unter versionsgebundenen URLs in `assets/content/<revision>/`. Eine ältere offene App verwendet dadurch weiterhin die zu ihr passenden Daten. Neue Inhalte werden zusammen mit einem App-Update veröffentlicht.
 
-❤️ **Favorites System**  
-Bookmark your favorite duas and easily access them later. All favorites are saved locally in your browser.
-
-🎨 **Light & Dark Mode**  
-Choose between light and dark themes for comfortable reading at any time of day.
-
-⚙️ **Customizable Settings**  
-- Adjust Arabic font size for optimal readability
-- Toggle translations on/off
-- Customize which features you want to use
-
-📖 **Authenticated Sources**  
-Each dua includes:
-- Original Arabic text with diacritical marks
-- Source context and references
-- Grading information from Islamic scholars
-- Primary source citations (Qur'an, Sahih collections, etc.)
-
-🔍 **Source Transparency**  
-View scholarly gradings (Sahih, Hasan, Dhaif) and understand the authenticity level of each supplication.
-
----
-
-## Getting Started
-
-### Prerequisites
-- Node.js (v16 or later)
-- npm or yarn
-
-### Installation
-
-1. **Clone the repository:**
-```bash
-git clone git@github.com:fecbatino/hizbulazam.git
-cd hizbulazam
-```
-
-2. **Install dependencies:**
-```bash
-npm install
-```
-
-3. **Start the development server:**
-```bash
-npm run dev
-```
-
-Open your browser and navigate to `http://localhost:5173` (or the URL shown in your terminal).
-
-### Build for Production
-
-```bash
-npm run build
-```
-
-The optimized build will be generated in the `dist/` folder.
-
-### Preview Production Build
-
-```bash
-npm preview
-```
-
----
-
-## Project Structure
-
-```
-hizbulazam/
-├── components/           # React components (UI elements, modals, selectors)
-├── hooks/               # Custom React hooks (duas data, touch gestures)
-├── App.tsx             # Main application component
-├── types.ts            # TypeScript interfaces and types
-├── constants.ts        # Application constants (day order mapping, etc.)
-├── vite.config.ts      # Vite configuration
-├── index.html          # HTML entry point
-├── tsconfig.json       # TypeScript configuration
-├── package.json        # Dependencies and scripts
-└── README.md           # This file
-```
-
-### Key Files
-
-- **`hooks/duas.ts`** – Contains all dua data and collections
-- **`components/DuaCard.tsx`** – Main display component for duas
-- **`components/DayNavigator.tsx`** – Day navigation controls
-- **`components/LanguageSelector.tsx`** – Language switcher
-- **`hooks/useSwipe.ts`** – Touch gesture handling (swipe detection)
-
----
-
-## Technologies
-
-- **React 19** – UI library
-- **TypeScript** – Type-safe development
-- **Vite** – Fast build tool and dev server
-- **Tailwind CSS** – Utility-first styling
-- **Amiri Font** – Beautiful Arabic typography
-
----
-
-## Usage
-
-### Navigation
-- **Click day name** to open day selector modal
-- **Arrow buttons** to move to previous/next day
-- **Swipe** on touch devices
-
-### Customize Your Experience
-1. Click the **⚙️ Settings icon** to open settings
-2. Adjust Arabic font size using the slider
-3. Toggle translations on/off
-4. Customize visibility of favorites and sharing options
-
-### Favorites
-- Click the **❤️ heart icon** on any dua to add it to favorites
-- Favorites are automatically saved to your browser's local storage
-- Clear browser storage to reset favorites
-
-### Theme
-- Click the **☀️/🌙 icon** to toggle between light and dark mode
-- Your theme preference is saved automatically
-
----
-
-## Browser Compatibility
-
-This app works best on:
-- Modern browsers (Chrome, Firefox, Safari, Edge)
-- Mobile devices (iOS 13+, Android 8+)
-- Desktop browsers with touch support
-
-**Local Storage:** The app uses browser local storage to save favorites, settings, and theme preference. Make sure cookies/storage are enabled.
-
----
-
-## Data Structure
-
-Each dua includes:
-- **Arabic text** with full diacriticals
-- **Translations** in multiple languages
-- **Source context** explaining the background
-- **Authenticity grading** (Sahih, Hasan, Dhaif, etc.)
-- **Primary sources** (Qur'an references, Hadith collections)
-
----
-
-## Performance Features
-
-- ⚡ Optimized React rendering with memoization
-- 📦 Vite's fast build system
-- 🎯 Lazy component loading
-- 💾 Efficient local storage management
-- 📱 Touch-optimized with smooth gestures
-
----
-
-## Accessibility
-
-- Semantic HTML structure
-- ARIA labels on interactive elements
-- Keyboard-navigable interface
-- Readable font sizes
-- High contrast in both light and dark modes
-
----
-
-## Future Enhancements
-
-Potential features for future releases:
-- Offline support with service workers
-- Daily push notifications
-- Sharing duas on social media
-- Search and filter functionality
-- Additional language translations
-- Audio recitations
-
----
-
-## Contributing
-
-Contributions are welcome! To contribute:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/YourFeature`)
-3. Commit your changes (`git commit -m 'Add some feature'`)
-4. Push to the branch (`git push origin feature/YourFeature`)
-5. Open a pull request
-
----
-
-## License
-
-This project is licensed under the MIT License – see the `LICENSE` file for details.
-
----
-
-## Support & Acknowledgments
-
-**About the Hizb Collection:**  
-The Hizb collection is a comprehensive set of authentic Islamic supplications organized by day of the week, designed to help Muslims deepen their spiritual practice.
-
-**Sources:**  
-All duas are sourced from authentic Islamic texts and are graded according to scholarly consensus.
-
----
-
-## Contact
-
-For questions, suggestions, or feedback:
-- Open an issue on GitHub
-- Connect via the repository
-
----
-
-## Disclaimer
-
-This application is provided for educational and spiritual purposes. Always consult with Islamic scholars for religious guidance and verification of hadith authenticity.
-
----
+Die App zeigt verfügbare Updates an. „Jetzt aktualisieren“ sichert die Leseposition vor dem Neuladen; „Später“ lässt die aktuelle Lesesitzung weiterlaufen.
 
 ## Entwicklung
 
+Node.js 22.12+ (22 LTS), 24 LTS oder 26+; npm.
+
 ```bash
 npm ci
-npm run dev          # http://localhost:3000
-npm run typecheck    # TypeScript
-npm run lint         # ESLint
-npm run test         # Vitest (18 Tests)
-npm run build        # dist/
+npm run dev           # http://localhost:3000
+npm run typecheck
+npm run lint
+npm run test
+npm run build
+npx playwright install chromium
+npm run test:e2e
+npm run preview
 ```
 
-Die Dua-Daten liegen in `public/data/` (ein JSON pro Wochentag plus Suchindex) und werden
-zur Laufzeit geladen - nicht mit dem JavaScript gebündelt.
+React 19, TypeScript, Vite, Tailwind 4 als PostCSS-Build, Workbox/PWA, Vitest und Playwright. Alle Schriften werden selbst gehostet. Keine Anmeldung, kein Anwendungsbackend, keine externen CDNs.
 
-## Deployment
+Die Datenquellen liegen weiterhin in `public/data/*.json`. Arabischer Text, Übersetzungen und Quellen dürfen im Rahmen technischer oder gestalterischer Arbeiten nicht verändert werden. Siehe [CLAUDE.md](./CLAUDE.md).
 
-Jeder Push auf `main` läuft durch GitHub Actions: Typen, Lint, Tests und Build müssen grün
-sein, danach wird `dist/` nach `/opt/stacks/hizbulazam/dist/` synchronisiert und der
-nginx-Container neu gestartet. Ein Smoke-Test prüft `/`, das Manifest und die Daten.
+Neue UI-Texte sind in `lib/ui.ts` gebündelt. Die Dialoge verwenden `hooks/useFocusTrap.ts`; die Leseposition wird über `hooks/useReadingPosition.ts` verwaltet.
 
-Details und Regeln für Agenten: [CLAUDE.md](./CLAUDE.md).
+Icons nach einer SVG-Änderung erzeugen:
+
+```bash
+node scripts/generate-icons.cjs
+```
+
+## Prüfungen
+
+CI prüft Pull Requests und `main`: Typen, ESLint einschließlich React-Hooks-Regeln, Unit-/Inhaltstests, Build und Browserprüfungen in Smartphone- und Desktop-Größe.
+
+Die Browserprüfungen decken diagonale Gesten, Dialog-Scrollsperre, Fokus nach Schriftgrößenänderungen, Tagesnavigation, Favoriten, Neustart, Sprachwahl, wiederholte Suchtreffer und die Offline-Woche ab. Touch-Ereignisse sind simuliert; zusätzliche Abnahme auf echten iOS-/Android-Geräten bleibt sinnvoll.
+
+## Auslieferung
+
+Nur der erfolgreiche Workflow auf `main` oder ein manueller Lauf auf `main` darf ausliefern; der Job nutzt das GitHub-Environment `production`. Arbeit erfolgt auf Branch und Pull Request, niemals direkter Push auf `main`.
+
+Der laufende Container `hizbulazam` bindet **`/var/www/hza`** schreibgeschützt als Webroot ein. Projekt und Konfiguration liegen in `/opt/stacks/hizbulazam`. Ein Container-Neustart ist für statische Dateien nicht erforderlich.
+
+CI überträgt das vollständige Artefakt zuerst nach `/opt/stacks/hizbulazam/releases/<commit>`. `deploy/publish.sh` veröffentlicht alle Ressourcen vor den Einstiegspunkten und ersetzt `index.html` sowie `sw.js` jeweils per atomarem Umbenennen. Es gibt keinen Löschabgleich auf dem aktiven Webroot: ältere gehashte Assets bleiben für offene Sitzungen verfügbar.
+
+Die Veröffentlichung des gesamten Dateibaums ist kein einzelner atomarer Verzeichniswechsel. Die Reihenfolge verhindert fehlende neue Abhängigkeiten; alte Clients behalten ihre Ressourcen. Der Smoke-Test kontrolliert Startseite, Manifest, Datenindex und ausgelieferte Commit-ID.
+
+Rollback eines auf dem Server vorhandenen Artefakts:
+
+```bash
+bash /opt/stacks/hizbulazam/deploy/publish.sh <vollständiger-vorheriger-commit>
+```
+
+Release-Verzeichnisse und ältere Assets werden absichtlich nicht automatisch gelöscht. Ihre spätere Aufbewahrung muss die Anforderungen offener und länger offline genutzter Clients berücksichtigen.
