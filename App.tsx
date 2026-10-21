@@ -197,6 +197,7 @@ const App: React.FC = () => {
   const [allDuas, setAllDuas] = useState<DuaItem[] | null>(null);
   const [pendingDua, setPendingDua] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [linkResolved, setLinkResolved] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   const [language, setLanguage] = useState<Language>('de');
@@ -296,11 +297,11 @@ const App: React.FC = () => {
 
   // ── Deep Links auflösen ──
   useEffect(() => {
-    if (!meta || !deepLink) return;
-    if (deepLink.kind === 'day') {
+    if (!meta) return;
+    if (deepLink?.kind === 'day') {
       const index = meta.findIndex(entry => entry.day === deepLink.day);
       if (index >= 0) setCurrentDayIndex(index);
-    } else {
+    } else if (deepLink?.kind === 'dua') {
       const entry = findDayByDuaId(meta, deepLink.id);
       if (entry) {
         setCurrentDayIndex(entry.order);
@@ -308,21 +309,27 @@ const App: React.FC = () => {
         setActiveView('duas');
       }
     }
+    // Erst nach dieser Runde darf der Tages-Hash geschrieben werden, sonst
+    // überschreibt er den Dua-Link, bevor er gelesen ist.
+    setLinkResolved(true);
   }, [meta, deepLink]);
 
   // Hash nachführen, solange kein Dua-Sprung offen ist
   useEffect(() => {
-    if (!meta || !meta[currentDayIndex] || pendingDua) return;
+    if (!meta || !meta[currentDayIndex] || pendingDua || !linkResolved) return;
     setDayHash(meta[currentDayIndex].day);
-  }, [meta, currentDayIndex, pendingDua]);
+  }, [meta, currentDayIndex, pendingDua, linkResolved]);
 
-  // Sprung zur Dua, sobald die Sammlung da ist
+  // Sprung zur Dua, sobald die Sammlung da ist. pendingDua bleibt gesetzt, damit
+  // der Hash auf #/dua/<id> stehen bleibt (teilbare Links) - erst eine manuelle
+  // Tagesnavigation loest ihn wieder.
+  const scrolledRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!collection || !pendingDua) return;
+    if (!collection || !pendingDua || scrolledRef.current === pendingDua) return;
     const id = pendingDua;
     const raf = window.requestAnimationFrame(() => {
       scrollToDua(id);
-      setPendingDua(null);
+      scrolledRef.current = id;
     });
     return () => window.cancelAnimationFrame(raf);
   }, [collection, pendingDua]);

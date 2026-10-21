@@ -66,11 +66,11 @@ jobs:
       - name: Ausliefern
         run: |
           ssh -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
-            "mkdir -p /opt/stacks/hizbulazam/dist"
+            "mkdir -p /var/www/hza"
           rsync -avz --delete \
             -e "ssh -p ${{ secrets.PORT }}" \
             dist/ \
-            ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/opt/stacks/hizbulazam/dist/
+            ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/var/www/hza/
           ssh -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
             "cd /opt/stacks/hizbulazam && docker compose up -d --quiet-pull"
 

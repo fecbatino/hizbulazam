@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     # Kein Host-Port: Auslieferung über nginx-proxy-manager im web-network.
     volumes:
-      - ./dist:/usr/share/nginx/html:ro
+      - ${HZA_ROOT:-./dist}:/usr/share/nginx/html:ro
       - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - web-network
