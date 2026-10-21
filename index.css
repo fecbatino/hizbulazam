@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --hza-green: #1B4332;
   --hza-green-light: #E1F5EE;
@@ -46,4 +50,26 @@ body {
   display: flex;
   flex-direction: column;
   background: var(--hza-bg);
+}
+
+/* Fokus und Sprungziele ---------------------------------------------------- */
+.dua-anchor {
+  scroll-margin-top: 12px;
+}
+
+.dua-highlight {
+  outline: 2px solid var(--hza-gold);
+  outline-offset: 4px;
+  border-radius: 14px;
+  transition: outline-color 0.4s ease;
+}
+
+/* Bewegung nur, wenn der Nutzer sie nicht abbestellt hat -------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

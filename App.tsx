@@ -5,15 +5,19 @@ import { DuaCard } from './components/DuaCard';
 import { LanguageSelector } from './components/LanguageSelector';
 import { AppSettings } from './components/SettingsModal';
 import { DATE_DAY_TO_ORDER_INDEX, DAYS_ORDER } from './constants';
-import { DUA_DATA } from './hooks/duas';
+import { findDayByDuaId, loadAllDays, loadDay, useCollectionsMeta } from './hooks/useCollections';
+import { scrollToDua, setDayHash, setDuaHash, useDeepLink } from './hooks/useDeepLink';
 import { useSwipe } from './hooks/useSwipe';
-import { Language } from './types';
+import { DuaCollection, DuaItem, Language } from './types';
 
 const DaySelectorModal = React.lazy(() =>
   import('./components/DaySelectorModal').then(module => ({ default: module.DaySelectorModal }))
 );
 const SettingsModal = React.lazy(() =>
   import('./components/SettingsModal').then(module => ({ default: module.SettingsModal }))
+);
+const SearchModal = React.lazy(() =>
+  import('./components/SearchModal').then(module => ({ default: module.SearchModal }))
 );
 
 const FAVORITES_STORAGE_KEY = 'dailyDuaFavorites';
@@ -55,15 +59,16 @@ const FAV_TITLE: Record<Language, string> = {
 
 const FavoritesView: React.FC<{
   favorites: Set<string>;
+  duas: DuaItem[] | null;
   language: Language;
   onToggleFavorite: (id: string) => void;
   showShare: boolean;
   translationFontSize: number;
   showTranslation: boolean;
-}> = ({ favorites, language, onToggleFavorite, showShare, translationFontSize, showTranslation }) => {
+}> = ({ favorites, duas, language, onToggleFavorite, showShare, translationFontSize, showTranslation }) => {
   const favDuas = useMemo(
-    () => DUA_DATA.flatMap(col => col.duas.filter(d => favorites.has(d.id))),
-    [favorites]
+    () => (duas ?? []).filter(dua => favorites.has(dua.id)),
+    [duas, favorites]
   );
 
   return (
@@ -81,7 +86,13 @@ const FavoritesView: React.FC<{
         {FAV_TITLE[language]}
       </div>
 
-      {favDuas.length === 0 ? (
+      {duas === null ? (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: 'var(--hza-hint)' }}>
+            {language === 'ar' ? 'جارٍ التحميل …' : 'Lädt …'}
+          </p>
+        </div>
+      ) : favDuas.length === 0 ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: 'var(--hza-hint)', textAlign: 'center', lineHeight: 1.6 }}>
             {EMPTY_FAV[language]}
@@ -107,8 +118,8 @@ const FavoritesView: React.FC<{
                     <button
                       onClick={async () => {
                         const text = `${dua.arabic_text}${translation ? `\n\n${translation}` : ''}\n\n${sourceCtx}`;
-                        if (navigator.share) { try { await navigator.share({ text }); } catch {} }
-                        else { try { await navigator.clipboard.writeText(text); alert('Kopiert!'); } catch {} }
+                        if (navigator.share) { try { await navigator.share({ text }); } catch { /* abgebrochen */ } }
+                        else { try { await navigator.clipboard.writeText(text); } catch { /* Clipboard gesperrt */ } }
                       }}
                       aria-label="Teilen"
                       style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--hza-border)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'var(--hza-hint)' }}
@@ -172,6 +183,8 @@ const getDistance = (touches: React.TouchList) => {
 // ── App ───────────────────────────────────────────────────────────────────────
 const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
+  const { meta, error: metaError } = useCollectionsMeta();
+  const deepLink = useDeepLink();
 
   const getInitialDayIndex = (): number => {
     try { return DATE_DAY_TO_ORDER_INDEX[new Date().getDay()] ?? 0; }
@@ -179,6 +192,13 @@ const App: React.FC = () => {
   };
 
   const [currentDayIndex, setCurrentDayIndex] = useState<number>(getInitialDayIndex);
+  const [collection, setCollection] = useState<DuaCollection | null>(null);
+  const [collectionError, setCollectionError] = useState<string | null>(null);
+  const [allDuas, setAllDuas] = useState<DuaItem[] | null>(null);
+  const [pendingDua, setPendingDua] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
   const [language, setLanguage] = useState<Language>('de');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
@@ -187,7 +207,7 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>('light');
   const [activeView, setActiveView] = useState<'duas' | 'favorites'>('duas');
 
-  // Load from localStorage
+  // ── Persistenz ──
   useEffect(() => {
     let initError: string | null = null;
     try {
@@ -239,32 +259,109 @@ const App: React.FC = () => {
   }, [language]);
 
   useEffect(() => {
+    const online = () => setIsOffline(false);
+    const offline = () => setIsOffline(true);
+    window.addEventListener('online', online);
+    window.addEventListener('offline', offline);
+    return () => {
+      window.removeEventListener('online', online);
+      window.removeEventListener('offline', offline);
+    };
+  }, []);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       if (isSettingsOpen) setIsSettingsOpen(false);
       else if (isDaySelectorOpen) setIsDaySelectorOpen(false);
+      else if (isSearchOpen) setIsSearchOpen(false);
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isSettingsOpen, isDaySelectorOpen]);
+  }, [isSettingsOpen, isDaySelectorOpen, isSearchOpen]);
+
+  // ── Daten: Tag laden ──
+  useEffect(() => {
+    if (!meta) return;
+    const entry = meta[currentDayIndex];
+    if (!entry) return;
+    let alive = true;
+    setCollection(null);
+    setCollectionError(null);
+    loadDay(entry.day)
+      .then(next => { if (alive) setCollection(next); })
+      .catch(err => { if (alive) setCollectionError(err instanceof Error ? err.message : String(err)); });
+    return () => { alive = false; };
+  }, [meta, currentDayIndex]);
+
+  // ── Deep Links auflösen ──
+  useEffect(() => {
+    if (!meta || !deepLink) return;
+    if (deepLink.kind === 'day') {
+      const index = meta.findIndex(entry => entry.day === deepLink.day);
+      if (index >= 0) setCurrentDayIndex(index);
+    } else {
+      const entry = findDayByDuaId(meta, deepLink.id);
+      if (entry) {
+        setCurrentDayIndex(entry.order);
+        setPendingDua(deepLink.id);
+        setActiveView('duas');
+      }
+    }
+  }, [meta, deepLink]);
+
+  // Hash nachführen, solange kein Dua-Sprung offen ist
+  useEffect(() => {
+    if (!meta || !meta[currentDayIndex] || pendingDua) return;
+    setDayHash(meta[currentDayIndex].day);
+  }, [meta, currentDayIndex, pendingDua]);
+
+  // Sprung zur Dua, sobald die Sammlung da ist
+  useEffect(() => {
+    if (!collection || !pendingDua) return;
+    const id = pendingDua;
+    const raf = window.requestAnimationFrame(() => {
+      scrollToDua(id);
+      setPendingDua(null);
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [collection, pendingDua]);
+
+  // Favoriten brauchen alle Tage - erst laden, wenn die Ansicht sie zeigt
+  useEffect(() => {
+    if (activeView !== 'favorites' || allDuas || !meta) return;
+    let alive = true;
+    loadAllDays(meta)
+      .then(collections => { if (alive) setAllDuas(collections.flatMap(item => item.duas)); })
+      .catch(err => { if (alive) setError(err instanceof Error ? err.message : String(err)); });
+    return () => { alive = false; };
+  }, [activeView, allDuas, meta]);
 
   const handleSettingsChange = useCallback((newSettings: Partial<AppSettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }));
   }, []);
 
-  const toggleTheme = useCallback(() => setTheme(t => t === 'light' ? 'dark' : 'light'), []);
+  const toggleTheme = useCallback(() => setTheme(previous => previous === 'light' ? 'dark' : 'light'), []);
 
-  const handleNextDay = useCallback(() => setCurrentDayIndex(i => (i + 1) % DAYS_ORDER.length), []);
-  const handlePrevDay = useCallback(() => setCurrentDayIndex(i => (i - 1 + DAYS_ORDER.length) % DAYS_ORDER.length), []);
+  const handleNextDay = useCallback(() => {
+    setPendingDua(null);
+    setCurrentDayIndex(index => (index + 1) % (meta?.length ?? DAYS_ORDER.length));
+  }, [meta]);
+
+  const handlePrevDay = useCallback(() => {
+    setPendingDua(null);
+    setCurrentDayIndex(index => (index - 1 + (meta?.length ?? DAYS_ORDER.length)) % (meta?.length ?? DAYS_ORDER.length));
+  }, [meta]);
 
   const handleSelectDay = (index: number) => {
+    setPendingDua(null);
     setCurrentDayIndex(index);
     setIsDaySelectorOpen(false);
   };
 
   const toggleFavorite = useCallback((duaId: string) => {
-    setFavorites(prev => {
-      const next = new Set(prev);
+    setFavorites(previous => {
+      const next = new Set(previous);
       if (next.has(duaId)) next.delete(duaId); else next.add(duaId);
       return next;
     });
@@ -276,6 +373,15 @@ const App: React.FC = () => {
     else if (tab === 'days') setIsDaySelectorOpen(true);
     else if (tab === 'settings') setIsSettingsOpen(true);
   }, []);
+
+  const handleSearchSelect = useCallback((day: string, duaId: string) => {
+    const entry = meta?.find(item => item.day === day);
+    if (!entry) return;
+    setActiveView('duas');
+    setCurrentDayIndex(entry.order);
+    setPendingDua(duaId);
+    setDuaHash(duaId);
+  }, [meta]);
 
   const swipeHandlers = useSwipe({ onSwipedLeft: handleNextDay, onSwipedRight: handlePrevDay });
 
@@ -302,23 +408,20 @@ const App: React.FC = () => {
     }
   }, [swipeHandlers]);
 
-  const currentCollection = useMemo(() => {
-    if (!DUA_DATA?.length) return null;
-    return DUA_DATA[Math.max(0, Math.min(currentDayIndex, DUA_DATA.length - 1))];
-  }, [currentDayIndex]);
-
-  useEffect(() => {
-    if (!currentCollection) setError('Inhalt konnte nicht geladen werden. Bitte neu laden.');
-  }, [currentCollection]);
-
   const activeTab: BottomTab = activeView === 'favorites' ? 'favorites' : 'duas';
+  const banner = error ?? metaError ?? (collectionError ? `Inhalt konnte nicht geladen werden (${collectionError}).` : null);
 
   return (
     <div
       className="app-container"
       style={{ '--arabic-font-size': `${settings.arabicFontSize}rem` } as React.CSSProperties}
     >
-      {error && <ErrorDisplay message={error} onDismiss={() => setError(null)} />}
+      {banner && <ErrorDisplay message={banner} onDismiss={() => { setError(null); setCollectionError(null); }} />}
+      {isOffline && (
+        <div role="status" className="bg-amber-100 text-amber-900 text-center text-sm py-1">
+          Offline — gespeicherte Inhalte bleiben verfügbar.
+        </div>
+      )}
 
       {/* ── Header ── */}
       <header style={{
@@ -338,6 +441,13 @@ const App: React.FC = () => {
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            aria-label="Suche"
+            style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '7px 10px', color: 'white', cursor: 'pointer', fontSize: 15 }}
+          >
+            ⌕
+          </button>
           <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
           <LanguageSelector currentLanguage={language} onLanguageChange={setLanguage} />
         </div>
@@ -346,23 +456,23 @@ const App: React.FC = () => {
       {/* ── Main content ── */}
       {activeView === 'duas' ? (
         <>
-          {!currentCollection ? (
+          {!collection ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", color: 'var(--hza-muted)', textAlign: 'center' }}>
-                Inhalt konnte nicht geladen werden. Bitte neu laden.
+              <p style={{ fontFamily: "'DM Sans', sans-serif", color: 'var(--hza-muted)', textAlign: 'center' }} role="status">
+                {collectionError ? 'Inhalt konnte nicht geladen werden.' : 'Lädt …'}
               </p>
             </div>
           ) : (
             <>
               <DayNavigator
-                dayName={currentCollection.name[language]}
-                dayNameAr={language !== 'ar' ? currentCollection.name['ar'] : undefined}
+                dayName={collection.name[language]}
+                dayNameAr={language !== 'ar' ? collection.name['ar'] : undefined}
                 onPrev={handlePrevDay}
                 onNext={handleNextDay}
                 onDayNameClick={() => setIsDaySelectorOpen(true)}
                 isRtl={language === 'ar'}
                 currentDayIndex={currentDayIndex}
-                totalDays={DUA_DATA.length}
+                totalDays={meta?.length ?? 1}
               />
               <div
                 style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
@@ -371,7 +481,7 @@ const App: React.FC = () => {
                 onTouchEnd={swipeHandlers.onTouchEnd}
               >
                 <DuaCard
-                  collection={currentCollection}
+                  collection={collection}
                   language={language}
                   favorites={favorites}
                   onToggleFavorite={toggleFavorite}
@@ -387,6 +497,7 @@ const App: React.FC = () => {
       ) : (
         <FavoritesView
           favorites={favorites}
+          duas={allDuas}
           language={language}
           onToggleFavorite={toggleFavorite}
           showShare={settings.showShare}
@@ -404,7 +515,7 @@ const App: React.FC = () => {
           isOpen={isDaySelectorOpen}
           onClose={() => setIsDaySelectorOpen(false)}
           onSelectDay={handleSelectDay}
-          days={DUA_DATA.map(d => d.name[language])}
+          days={(meta ?? []).map(entry => entry.name[language])}
           currentIndex={currentDayIndex}
           language={language}
         />
@@ -414,6 +525,12 @@ const App: React.FC = () => {
           settings={settings}
           onSettingsChange={handleSettingsChange}
           language={language}
+        />
+        <SearchModal
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+          language={language}
+          onSelect={handleSearchSelect}
         />
       </React.Suspense>
     </div>

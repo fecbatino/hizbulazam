@@ -4,43 +4,82 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  verify:
+    name: Prüfen
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
-      - name: Install dependencies
+      - name: Installieren
         run: npm ci
+
+      - name: Typen
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm run test
 
       - name: Build
         run: npm run build
 
-      - name: Setup SSH
+      - name: Build-Artefakte sichern
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+
+  deploy:
+    name: Ausliefern
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Build-Artefakte holen
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: SSH vorbereiten
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p ${{ secrets.PORT }} -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
 
-      - name: Create target directory on server
+      - name: Ausliefern
         run: |
-          ssh -p ${{ secrets.PORT }} \
-            ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
-            "mkdir -p /var/www/hza"
-
-      - name: Deploy via rsync
-        run: |
+          ssh -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
+            "mkdir -p /opt/stacks/hizbulazam/dist"
           rsync -avz --delete \
             -e "ssh -p ${{ secrets.PORT }}" \
             dist/ \
-            ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/var/www/hza/
+            ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/opt/stacks/hizbulazam/dist/
+          ssh -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
+            "cd /opt/stacks/hizbulazam && docker compose up -d --quiet-pull"
+
+      - name: Smoke-Test
+        run: |
+          set -euo pipefail
+          for path in / /manifest.webmanifest /data/collections.json; do
+            code=$(curl -fsS -o /dev/null -w '%{http_code}' "https://hza.fechal-batakpale.com${path}")
+            echo "${path} -> ${code}"
+            [ "$code" = "200" ] || exit 1
+          done
+          echo "Smoke-Test bestanden"

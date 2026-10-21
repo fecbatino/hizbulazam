@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Inhalte und Schriften gehören ins Repo (nicht ignorieren)
+!public/data/*.json
+!public/fonts/*.woff2
+!public/fonts/fonts.css

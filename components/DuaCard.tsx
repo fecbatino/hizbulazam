@@ -77,6 +77,7 @@ export const DuaCard = React.memo<DuaCardProps>(
 
           return (
             <React.Fragment key={dua.id}>
+              <div id={`dua-${dua.id}`} className="dua-anchor" />
               <article style={{
                 background: 'var(--hza-card)',
                 borderRadius: 16,

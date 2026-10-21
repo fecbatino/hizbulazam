@@ -1,0 +1,27 @@
+services:
+  hizbulazam:
+    image: nginx:1.27-alpine
+    container_name: hizbulazam
+    restart: unless-stopped
+    # Kein Host-Port: Auslieferung über nginx-proxy-manager im web-network.
+    volumes:
+      - ./dist:/usr/share/nginx/html:ro
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - web-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 64M
+
+networks:
+  web-network:
+    external: true
+    name: web-network
