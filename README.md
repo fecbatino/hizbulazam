@@ -234,3 +234,27 @@ For questions, suggestions, or feedback:
 ## Disclaimer
 
 This application is provided for educational and spiritual purposes. Always consult with Islamic scholars for religious guidance and verification of hadith authenticity.
+
+---
+
+## Entwicklung
+
+```bash
+npm ci
+npm run dev          # http://localhost:3000
+npm run typecheck    # TypeScript
+npm run lint         # ESLint
+npm run test         # Vitest (18 Tests)
+npm run build        # dist/
+```
+
+Die Dua-Daten liegen in `public/data/` (ein JSON pro Wochentag plus Suchindex) und werden
+zur Laufzeit geladen - nicht mit dem JavaScript gebündelt.
+
+## Deployment
+
+Jeder Push auf `main` läuft durch GitHub Actions: Typen, Lint, Tests und Build müssen grün
+sein, danach wird `dist/` nach `/opt/stacks/hizbulazam/dist/` synchronisiert und der
+nginx-Container neu gestartet. Ein Smoke-Test prüft `/`, das Manifest und die Daten.
+
+Details und Regeln für Agenten: [CLAUDE.md](./CLAUDE.md).

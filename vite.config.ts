@@ -1,114 +1,80 @@
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
-    return {
-      server: {
-        port: 3000,
-        host: '0.0.0.0',
+export default defineConfig({
+  server: {
+    port: 3000,
+    host: '0.0.0.0',
+  },
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      manifest: {
+        name: 'Hizbul Azam — Dua der Woche',
+        short_name: 'Hizbul Azam',
+        description: 'Die Duas der Woche, arabisch mit Übersetzung — offline verfügbar.',
+        lang: 'de',
+        dir: 'ltr',
+        theme_color: '#1B4332',
+        background_color: '#F7F5F0',
+        display: 'standalone',
+        start_url: '/',
+        scope: '/',
+        icons: [
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icon.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any' },
+        ],
       },
-      plugins: [
-        react(),
-        VitePWA({
-          registerType: 'autoUpdate',
-          includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png'],
-          manifest: {
-            name: 'Daily Dua - Hizbul Azam',
-            short_name: 'Daily Dua',
-            description: 'Daily Islamic supplications from the Hizb collection',
-            theme_color: '#1a7a4a',
-            background_color: '#f0f7f4',
-            display: 'standalone',
-            start_url: '/',
-            icons: [
-              {
-                src: 'icon-192.png',
-                sizes: '192x192',
-                type: 'image/png',
-                purpose: 'any'
-              },
-              {
-                src: 'icon-512.png',
-                sizes: '512x512',
-                type: 'image/png',
-                purpose: 'any'
-              },
-              {
-                src: 'icon-512.png',
-                sizes: '512x512',
-                type: 'image/png',
-                purpose: 'maskable'
-              },
-              {
-                src: 'icon.svg',
-                sizes: '512x512',
-                type: 'image/svg+xml',
-                purpose: 'any'
-              }
-            ]
+      workbox: {
+        // Nur Code und Icons vorladen - Daten und Schriften kommen beim ersten
+        // Gebrauch in den Cache und bleiben dort (siehe runtimeCaching).
+        globPatterns: ['**/*.{js,css,html}'],
+        navigateFallback: '/index.html',
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            // Tagesdaten: sofort aus dem Cache, im Hintergrund aktualisieren
+            urlPattern: /\/data\/.*\.json$/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'hza-data',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
           },
-          workbox: {
-            // Caches all local build assets, which includes index.html, index.css,
-            // and the bundled Javascript code containing the compiled 'duas.ts' data.
-            globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-            runtimeCaching: [
-              // Caching Google Fonts Stylesheets
-              {
-                urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-                handler: 'CacheFirst',
-                options: {
-                  cacheName: 'google-fonts-stylesheets',
-                  expiration: {
-                    maxEntries: 10,
-                    maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-                  },
-                  cacheableResponse: {
-                    statuses: [0, 200]
-                  }
-                }
-              },
-              // Caching Google Fonts Webfonts (Arabic Fonts Amiri and Almarai)
-              {
-                urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-                handler: 'CacheFirst',
-                options: {
-                  cacheName: 'google-fonts-webfonts',
-                  expiration: {
-                    maxEntries: 30,
-                    maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-                  },
-                  cacheableResponse: {
-                    statuses: [0, 200]
-                  }
-                }
-              }
-            ]
-          }
-        })
-      ],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+          {
+            // Schriften ändern sich nie
+            urlPattern: /\/fonts\/.*\.woff2$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'hza-fonts',
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
-      resolve: {
-        alias: {
-          '@': path.resolve(__dirname, '.'),
-        }
+    }),
+  ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, '.'),
+    },
+  },
+  build: {
+    target: 'es2020',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) return 'vendor';
+          return undefined;
+        },
       },
-      build: {
-        rollupOptions: {
-          output: {
-            manualChunks(id) {
-              if (id.includes('node_modules')) {
-                return 'vendor';
-              }
-            }
-          }
-        }
-      }
-    };
+    },
+  },
 });
-
