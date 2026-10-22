@@ -82,9 +82,13 @@ Push auf main ──► GitHub Actions
   optional. Lokal: `HZA_ROOT=./dist docker compose up`.
 - Compose-/nginx-Änderungen kommen per CI an. Der Server-Checkout darf keine lokalen
   Änderungen an versionierten Dateien haben, sonst bricht der Fast-Forward ab.
-- Secrets: `SSH_KEY`, `SSH_KNOWN_HOSTS` (Ausgabe von `ssh-keyscan -p <PORT> <HOST>`,
-  Fingerprint vorher prüfen), `HOST`, `PORT`, `USERNAME`. Der Deploy-User braucht
-  Docker-Rechte und Schreibrechte auf `/opt/stacks/hizbulazam`.
+- Secrets: `SSH_KEY`, `HOST`, `PORT`, `USERNAME`; optional `SSH_KNOWN_HOSTS`. Der Deploy-User
+  braucht Docker-Rechte und Schreibrechte auf `/opt/stacks/hizbulazam`.
+- Host-Schlüssel: `PIN` im Workflow ist der **ed25519**-Fingerprint des Servers
+  (`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`). `deploy/pin-host-key.sh` behält nur
+  ed25519-Einträge (aus dem Secret oder per `ssh-keyscan -t ed25519`), verlangt, dass **jeder**
+  davon dem Pin entspricht, und beschränkt ssh per `HostKeyAlgorithms ssh-ed25519`. Der Job
+  „Host-Schlüssel prüfen“ macht das auch in PRs, nur lesend. Neuer Server-Schlüssel → `PIN` ändern.
 - Rollback: NPM-Host 22 zurück auf `hza-web:80` (der alte Container und `/var/www/hza`
   bleiben bestehen), oder `dist/` aus dem vorherigen Artefakt zurückspielen.
 

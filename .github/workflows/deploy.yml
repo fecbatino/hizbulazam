@@ -14,6 +14,11 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # ed25519-Fingerprint des Servers; prüfen mit
+  # ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+  PIN: SHA256:XE0PbpKgL0tZ1Hh24ZuUd9DYJk4WZTH9e3fC4cKA9cw
+
 jobs:
   verify:
     name: Prüfen
@@ -57,9 +62,25 @@ jobs:
           path: dist
           retention-days: 7
 
+  hostkey:
+    name: Host-Schlüssel prüfen
+    # Nur lesend: ed25519-Schlüssel des Servers scannen und gegen den Pin
+    # prüfen, ohne Login. Fork-PRs bekommen keine Secrets, dort entfällt das.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gepinnten Schlüssel abgleichen
+        env:
+          KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          HOST: ${{ secrets.HOST }}
+          PORT: ${{ secrets.PORT }}
+        run: bash deploy/pin-host-key.sh
+
   deploy:
     name: Ausliefern
-    needs: verify
+    needs: [verify, hostkey]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: production
@@ -72,27 +93,20 @@ jobs:
           name: dist
           path: dist
 
-      # Host-Schlüssel kommt aus dem Secret statt aus ssh-keyscan: ein Scan zur
-      # Laufzeit würde jedem Server vertrauen, der unter HOST antwortet.
+      # Nur der gepinnte ed25519-Schlüssel wird vertraut, und ssh darf keinen
+      # anderen Schlüsseltyp aushandeln (deploy/pin-host-key.sh). Ein Check
+      # "irgendeine Zeile passt" ließe einen zweiten, fremden Schlüssel zu.
       - name: SSH vorbereiten
         env:
           KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-          PIN: SHA256:XE0PbpKgL0tZ1Hh24ZuUd9DYJk4WZTH9e3fC4cKA9cw
+          HOST: ${{ secrets.HOST }}
+          PORT: ${{ secrets.PORT }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          if [ -n "${KNOWN_HOSTS:-}" ]; then
-            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          else
-            # Kein Secret gepflegt: einmalig scannen, aber den Schluessel gegen
-            # den im Workflow gepinnten Fingerprint pruefen (kein Blindvertrauen).
-            ssh-keyscan -p "${{ secrets.PORT }}" "${{ secrets.HOST }}" > ~/.ssh/known_hosts 2>/dev/null
-            echo "Hinweis: Secret SSH_KNOWN_HOSTS fehlt, Host-Schluessel per Fingerprint geprueft"
-          fi
-          ssh-keygen -lf ~/.ssh/known_hosts | grep -qF "$PIN" \
-            || { echo "Host-Schluessel passt nicht zum gepinnten Fingerprint"; exit 1; }
+          bash deploy/pin-host-key.sh
 
       - name: Stack abgleichen
         run: |
