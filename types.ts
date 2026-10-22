@@ -1,5 +1,8 @@
 
-export type Language = 'en' | 'de' | 'fr' | 'ar';
+/** UI language. Arabic is the source text, not a UI language. */
+export type Language = 'en' | 'de' | 'fr';
+/** Day names exist in every UI language plus Arabic. */
+export type NameLanguage = Language | 'ar';
 
 export type DayOfWeek = 'friday' | 'saturday' | 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday';
 
@@ -33,7 +36,7 @@ export interface DuaItem {
 
 export interface DuaCollection {
   day: DayOfWeek;
-  name: { [key in Language]: string };
+  name: { [key in NameLanguage]: string };
   hizbTitle?: string;
   duas: DuaItem[];
 }

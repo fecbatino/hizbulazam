@@ -35,6 +35,8 @@ it("open/close uses a consistent hook order and restores scroll and focus", () =
   const props = {
     onClose: vi.fn(),
     onSettingsChange: vi.fn(),
+    theme: "system" as const,
+    onThemeChange: vi.fn(),
     language: "de" as const,
     settings,
   };
@@ -75,6 +77,8 @@ it("Escape closes once and Tab cycles inside the dialog", () => {
       onClose={close}
       settings={settings}
       onSettingsChange={() => {}}
+      theme="system"
+      onThemeChange={() => {}}
       language="de"
     />,
   );

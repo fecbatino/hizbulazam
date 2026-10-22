@@ -41,6 +41,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Veröffentlichung und Bereinigung prüfen
+        run: bash deploy/test-publish.sh
+
       - name: Browser installieren
         run: npx playwright install --with-deps chromium
 

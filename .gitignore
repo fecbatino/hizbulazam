@@ -35,3 +35,6 @@ dist-ssr
 /playwright-report/
 /build-check.log
 /releases/
+
+# Agenten-Arbeitsdateien
+.antigravitycli/
