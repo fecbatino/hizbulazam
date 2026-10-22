@@ -6,6 +6,9 @@ plugins {
 def keystorePath = (System.getenv("ANDROID_KEYSTORE_PATH") ?: "").trim()
 def vCode = (System.getenv("APP_VERSION_CODE") ?: "").trim()
 def vName = (System.getenv("APP_VERSION_NAME") ?: "").trim()
+def ksPass = (System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "").trim()
+def ksAlias = (System.getenv("ANDROID_KEY_ALIAS") ?: "upload").trim()
+def keyPass = (System.getenv("ANDROID_KEY_PASSWORD") ?: "").trim()
 
 android {
   namespace "com.fechalbatakpale.hizbulazam"
@@ -23,9 +26,9 @@ android {
     release {
       if (keystorePath) {
         storeFile file(keystorePath)
-        storePassword (System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "").trim()
-        keyAlias (System.getenv("ANDROID_KEY_ALIAS") ?: "").trim()
-        keyPassword (System.getenv("ANDROID_KEY_PASSWORD") ?: "").trim()
+        storePassword ksPass
+        keyAlias ksAlias
+        keyPassword keyPass
       }
     }
   }
@@ -48,6 +51,14 @@ android {
   lint {
     abortOnError false
   }
+}
+
+// androidbrowserhelper bringt kotlin-stdlib-jdk7/jdk8 in 1.6.21 mit, appcompat
+// kotlin-stdlib 1.8.22 - dieselben Klassen in zwei Modulen. Die jdk7/jdk8-Artefakte
+// sind seit 1.8 nur noch Weiterleitungen und werden hier entfernt.
+configurations.configureEach {
+  exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"
+  exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8"
 }
 
 dependencies {
