@@ -1,0 +1,54 @@
+plugins {
+  id "com.android.application"
+}
+
+// Keystore und Zugangsdaten kommen ausschliesslich aus der Umgebung (CI-Secrets).
+def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+
+android {
+  namespace "com.fechalbatakpale.hizbulazam"
+  compileSdk 36
+
+  defaultConfig {
+    applicationId "com.fechalbatakpale.hizbulazam"
+    minSdk 21
+    targetSdk 36
+    versionCode (System.getenv("APP_VERSION_CODE") ?: "1").toInteger()
+    versionName (System.getenv("APP_VERSION_NAME") ?: "1.0.0")
+  }
+
+  signingConfigs {
+    release {
+      if (keystorePath) {
+        storeFile file(keystorePath)
+        storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+        keyAlias System.getenv("ANDROID_KEY_ALIAS")
+        keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+      }
+    }
+  }
+
+  buildTypes {
+    release {
+      minifyEnabled false
+      shrinkage false
+      if (keystorePath) {
+        signingConfig signingConfigs.release
+      }
+    }
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+
+  lint {
+    abortOnError false
+  }
+}
+
+dependencies {
+  implementation "com.google.androidbrowserhelper:androidbrowserhelper:2.5.0"
+  implementation "androidx.appcompat:appcompat:1.7.0"
+}
