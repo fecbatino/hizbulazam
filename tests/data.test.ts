@@ -13,7 +13,7 @@ const days = index.collections.map(entry => ({
     duas: Array<Record<string, unknown>>;
   },
 }));
-const search = JSON.parse(readFileSync(join(DATA_DIR, 'search-index.json'), 'utf8')) as Array<{ id: string; day: string }>;
+const search = JSON.parse(readFileSync(join(DATA_DIR, 'search-index.json'), 'utf8')) as Array<{ id: string; day: string; ar: string }>;
 const REQUIRED = [
   'id', 'arabic_text', 'translation_de', 'translation_en', 'translation_fr',
   'source_context_de', 'source_context_en', 'source_context_fr', 'source_type', 'grading',
@@ -52,10 +52,31 @@ describe('Dua-Daten', () => {
     expect(broken).toEqual([]);
   });
 
-  it('hält Suchindex und Tagesdateien konsistent', () => {
-    const byDay = new Map(days.map(entry => [entry.meta.day, entry.data.duas.map(d => String(d.id))]));
+  it('enthält im gesamten arabischen Text keine fremden Buchstaben oder beschädigten Zeichen', () => {
+    const broken: string[] = [];
+    for (const entry of days) {
+      for (const dua of entry.data.duas) {
+        for (const character of String(dua.arabic_text)) {
+          const foreignLetter = /\p{L}/u.test(character) && !/\p{Script_Extensions=Arabic}/u.test(character);
+          if (foreignLetter || /[\p{C}\uFFFD]/u.test(character)) {
+            const code = character.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0');
+            broken.push(`${entry.meta.day}/${dua.id}: U+${code}`);
+          }
+        }
+      }
+    }
+    expect(broken).toEqual([]);
+  });
+
+  it('hält IDs und arabische Volltexte im Suchindex identisch zu den Tagesdateien', () => {
+    const byDay = new Map(days.map(entry => [
+      entry.meta.day,
+      new Map(entry.data.duas.map(dua => [String(dua.id), String(dua.arabic_text)])),
+    ]));
     for (const doc of search) {
-      expect(byDay.get(doc.day)).toContain(doc.id);
+      const arabic = byDay.get(doc.day)?.get(doc.id);
+      expect(arabic, `${doc.day}/${doc.id}`).toBeDefined();
+      expect(doc.ar, `${doc.day}/${doc.id}`).toBe(arabic);
     }
   });
 
