@@ -11,6 +11,9 @@ concurrency:
   group: hza-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     name: Prüfen
@@ -37,6 +40,9 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Veröffentlichung und Bereinigung prüfen
+        run: bash deploy/test-publish.sh
 
       - name: Browser installieren
         run: npx playwright install --with-deps chromium
@@ -66,12 +72,24 @@ jobs:
           name: dist
           path: dist
 
+      # Host-Schlüssel kommt aus dem Secret statt aus ssh-keyscan: ein Scan zur
+      # Laufzeit würde jedem Server vertrauen, der unter HOST antwortet.
       - name: SSH vorbereiten
+        env:
+          KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
         run: |
+          set -euo pipefail
+          [ -n "$KNOWN_HOSTS" ] || { echo "Secret SSH_KNOWN_HOSTS fehlt"; exit 1; }
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p ${{ secrets.PORT }} -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Stack abgleichen
+        run: |
+          set -euo pipefail
+          ssh -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
+            "bash -s -- ${GITHUB_SHA}" < deploy/sync-stack.sh
 
       - name: Ausliefern
         run: |
@@ -88,11 +106,15 @@ jobs:
       - name: Smoke-Test
         run: |
           set -euo pipefail
-          for path in / /manifest.webmanifest /data/collections.json; do
+          content="/assets/content/$(ls dist/assets/content)"
+          for path in / /manifest.webmanifest "$content/collections.json"; do
             code=$(curl -fsS -o /dev/null -w '%{http_code}' "https://hza.fechal-batakpale.com${path}?v=${GITHUB_SHA::7}")
             echo "${path} -> ${code}"
             [ "$code" = "200" ] || exit 1
           done
           deployed=$(curl -fsS "https://hza.fechal-batakpale.com/deployed-sha.txt?v=${GITHUB_SHA}")
           [ "$deployed" = "$GITHUB_SHA" ] || exit 1
+          curl -fsSI "https://hza.fechal-batakpale.com/?v=${GITHUB_SHA::7}" |
+            grep -qi '^content-security-policy:' ||
+            { echo "Security-Header fehlen"; exit 1; }
           echo "Smoke-Test bestanden"

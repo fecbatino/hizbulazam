@@ -10,11 +10,14 @@ export interface AppSettings {
   translationFontSize: number;
   showTranslation: boolean;
 }
+export type Theme = "light" | "dark" | "system";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   settings: AppSettings;
   onSettingsChange: (settings: Partial<AppSettings>) => void;
+  theme: Theme;
+  onThemeChange: (theme: Theme) => void;
   language: Language;
 }
 const SETTINGS_T = {
@@ -42,20 +45,14 @@ const SETTINGS_T = {
     arabicFont: "Taille de police arabe",
     translationFont: "Taille de police de traduction",
   },
-  ar: {
-    title: "الإعدادات",
-    showFavorites: "إظهار أزرار المفضلة",
-    showShare: "إظهار أزرار المشاركة",
-    showTranslation: "عرض الترجمة",
-    arabicFont: "حجم الخط العربي",
-    translationFont: "حجم خط الترجمة",
-  },
 };
 export function SettingsModal({
   isOpen,
   onClose,
   settings,
   onSettingsChange,
+  theme,
+  onThemeChange,
   language,
 }: Props) {
   const ref = useFocusTrap<HTMLDivElement>(isOpen, onClose);
@@ -84,7 +81,6 @@ export function SettingsModal({
           </button>
         </div>
         {(["showFavorites", "showShare", "showTranslation"] as const)
-          .filter((key) => language !== "ar" || key !== "showTranslation")
           .map((key) => (
             <label className="setting-toggle" key={key}>
               <span>{t[key]}</span>
@@ -95,6 +91,27 @@ export function SettingsModal({
               />
             </label>
           ))}
+        <fieldset className="theme-choice">
+          <legend>{ui.theme}</legend>
+          {(
+            [
+              ["light", ui.light],
+              ["dark", ui.dark],
+              ["system", ui.system],
+            ] as const
+          ).map(([value, label]) => (
+            <label key={value}>
+              <input
+                type="radio"
+                name="theme"
+                value={value}
+                checked={theme === value}
+                onChange={() => onThemeChange(value)}
+              />
+              <span>{label}</span>
+            </label>
+          ))}
+        </fieldset>
         <label className="font-setting" htmlFor="font-size-slider">
           {t.arabicFont}
           <span className="font-value" aria-hidden="true">

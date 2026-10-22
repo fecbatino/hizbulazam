@@ -17,7 +17,6 @@ export function LanguageSelector({
       <option value="de">Deutsch</option>
       <option value="en">English</option>
       <option value="fr">Français</option>
-      {currentLanguage === "ar" && <option value="ar">العربية</option>}
     </select>
   );
 }

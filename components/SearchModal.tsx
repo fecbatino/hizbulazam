@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Language } from "../types";
+import { Language, NameLanguage } from "../types";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { normalize } from "../lib/normalize";
 import { dataUrl } from "../lib/dataUrl";
@@ -9,7 +9,7 @@ import { Icon } from "./icons";
 interface SearchDoc {
   id: string;
   day: string;
-  dayName: Record<Language, string>;
+  dayName: Record<NameLanguage, string>;
   ar: string;
   de: string;
   en: string;
@@ -42,12 +42,6 @@ const TEXT = {
     placeholder: "Chercher une dua — arabe, français, allemand …",
     empty: "Aucun résultat",
     hint: "Les 140 duas de la semaine",
-  },
-  ar: {
-    title: "بحث",
-    placeholder: "ابحث في الأدعية …",
-    empty: "لا نتائج",
-    hint: "جميع الأدعية الـ140",
   },
 };
 
@@ -214,9 +208,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                       ? doc.de
                       : language === "fr"
                         ? doc.fr
-                        : language === "ar"
-                          ? doc.ctx
-                          : doc.en}
+                        : doc.en}
                   </p>
                 </button>
               </li>
