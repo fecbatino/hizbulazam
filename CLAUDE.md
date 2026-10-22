@@ -58,7 +58,11 @@ Push auf main ──► GitHub Actions
       deploy/sync-stack.sh → Server-Checkout per Fast-Forward auf <commit>,
          nginx -t in Wegwerf-Container, compose up --wait, nginx reload
       Artefakt → /opt/stacks/hizbulazam/releases/<commit>/
-      deploy/publish.sh → /var/www/hza (Assets zuerst, Einstiegspunkte atomar)
+      deploy/publish.sh → /var/www/hza (Assets zuerst, Einstiegspunkte atomar),
+         danach Bereinigung: letzte 5 Releases behalten; Dateien unter assets/ nur löschen,
+         wenn kein behaltenes Release sie enthält UND sie älter als 30 Tage sind.
+         Steuerung: HZA_KEEP_RELEASES (≥2), HZA_ASSET_MAX_AGE_DAYS (≥7),
+         HZA_RETENTION_DRY_RUN=1 (nur anzeigen). Geprüft in CI per deploy/test-publish.sh.
    Smoke-Test: / · /manifest.webmanifest · /assets/content/<version>/collections.json == 200,
                deployed-sha.txt == Commit, Content-Security-Policy vorhanden
 ```
@@ -111,7 +115,7 @@ Branch-Namen: `claude/<thema>-<YYYYMMDD>` bzw. `codex/<thema>-<YYYYMMDD>`.
 | Punkt | Datei | Status |
 |---|---|---|
 | Arabische UI-Sprache entfernt (kein `source_context_ar`, kein RTL-Layout); gespeichertes `ar` fällt auf Deutsch zurück. Wiederaufnahme erst mit geprüften arabischen Quellenkontexten | `types.ts` (`Language` vs. `NameLanguage`) | entschieden |
-| Bereinigung alter Releases/Assets auf dem Server | `deploy/publish.sh` | offen, braucht Freigabe (löscht in Produktion) |
+| Bereinigung alter Releases/Assets auf dem Server | `deploy/publish.sh`, Test `deploy/test-publish.sh` | umgesetzt, freigegeben am 22.10.2026 |
 | Tageswechsel/Scrollen | `e2e/reading.spec.ts` | Regressionstests; Tageswechsel nur ausdrücklich |
 
 ## Arbeitsweise
