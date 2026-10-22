@@ -66,6 +66,15 @@ export default defineConfig({
           });
       },
       generateBundle() {
+        // Vite ueberspringt Dot-Verzeichnisse in public/; die Digital Asset
+        // Links muessen aber unter /.well-known/ liegen.
+        this.emitFile({
+          type: "asset",
+          fileName: ".well-known/assetlinks.json",
+          source: fs.readFileSync(
+            path.join(root, "public/.well-known/assetlinks.json"),
+          ),
+        });
         for (const item of resources)
           this.emitFile({
             type: "asset",
