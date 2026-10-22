@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.fechalbatakpale.hizbulazam",
+      "sha256_cert_fingerprints": [
+        "52:8C:4C:64:E1:DB:65:E0:F8:0D:92:8B:20:31:98:1C:16:3B:7C:FD:66:5F:24:35:53:2F:91:01:AC:F1:CB:9B"
+      ]
+    }
+  }
+]
