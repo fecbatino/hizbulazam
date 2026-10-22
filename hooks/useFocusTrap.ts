@@ -1,63 +1,94 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-/**
- * Fokusfalle für Dialoge: Fokus beim Öffnen hinein, Tab bleibt drin,
- * Escape schließt, Fokus geht beim Schließen zurück auf das auslösende Element.
- */
-export function useFocusTrap<T extends HTMLElement>(isOpen: boolean, onClose: () => void) {
+/** Dialog scrolling and focus belong to the opening session, not its renders. */
+export function useFocusTrap<T extends HTMLElement>(
+  isOpen: boolean,
+  onClose: () => void,
+) {
   const ref = useRef<T | null>(null);
-
+  const close = useRef(onClose);
+  useLayoutEffect(() => {
+    close.current = onClose;
+  });
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !ref.current) return;
     const node = ref.current;
-    if (!node) return;
-
     const previous = document.activeElement as HTMLElement | null;
+    const y = window.scrollY;
+    const x = window.scrollX;
+    const body = document.body;
+    const original = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      width: body.style.width,
+      overflow: body.style.overflow,
+      paddingRight: body.style.paddingRight,
+    };
+    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+    body.style.position = "fixed";
+    body.style.top = `-${y}px`;
+    body.style.left = `-${x}px`;
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`;
+    const background = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-dialog-background]"),
+    );
+    const inert = background.map((el) => el.inert);
+    background.forEach((el) => {
+      el.inert = true;
+    });
     const visible = () =>
       Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-        el => el.offsetParent !== null || el === document.activeElement
+        (el) => !el.hidden && el.getClientRects().length > 0,
       );
-
-    if (!node.hasAttribute('tabindex')) node.setAttribute('tabindex', '-1');
-    // Erst nach dem ersten Frame sind die Kinder layoutet (offsetParent gesetzt);
-    // ohne diesen Aufschub landet der Fokus bei Body.
-    const focusFirst = () => {
-      const first = visible()[0];
-      if (first) first.focus();
-      else node.focus();
-    };
-    const raf = window.requestAnimationFrame(focusFirst);
-
+    const raf = window.requestAnimationFrame(() =>
+      (visible()[0] ?? node).focus({ preventScroll: true }),
+    );
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
+        event.preventDefault();
         event.stopPropagation();
-        onClose();
+        close.current();
+      }
+      if (event.key !== "Tab") return;
+      const items = visible();
+      const first = items[0],
+        last = items[items.length - 1];
+      if (!first || !last) {
+        event.preventDefault();
+        node.focus({ preventScroll: true });
         return;
       }
-      if (event.key !== 'Tab') return;
-      const items = visible();
-      if (items.length === 0) return;
-      const firstItem = items[0];
-      const lastItem = items[items.length - 1];
-      if (event.shiftKey && document.activeElement === firstItem) {
+      if (
+        event.shiftKey &&
+        (document.activeElement === first || document.activeElement === node)
+      ) {
         event.preventDefault();
-        lastItem.focus();
-      } else if (!event.shiftKey && document.activeElement === lastItem) {
+        last.focus({ preventScroll: true });
+      } else if (
+        !event.shiftKey &&
+        (document.activeElement === last || document.activeElement === node)
+      ) {
         event.preventDefault();
-        firstItem.focus();
+        first.focus({ preventScroll: true });
       }
     };
-
-    node.addEventListener('keydown', onKeyDown);
+    node.addEventListener("keydown", onKeyDown);
     return () => {
       window.cancelAnimationFrame(raf);
-      node.removeEventListener('keydown', onKeyDown);
-      if (previous && typeof previous.focus === 'function') previous.focus();
+      node.removeEventListener("keydown", onKeyDown);
+      background.forEach((el, index) => {
+        el.inert = inert[index];
+      });
+      Object.assign(body.style, original);
+      window.scrollTo({ left: x, top: y, behavior: "instant" });
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
-  }, [isOpen, onClose]);
-
+  }, [isOpen]);
   return ref;
 }

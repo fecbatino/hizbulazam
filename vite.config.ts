@@ -1,78 +1,153 @@
-import path from 'path';
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
+import path from "node:path";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
 
+const root = path.dirname(fileURLToPath(import.meta.url));
+const data = fs
+  .readdirSync(path.join(root, "public/data"))
+  .filter((file) => file.endsWith(".json"))
+  .sort()
+  .map((file) => ({
+    file,
+    source: fs.readFileSync(path.join(root, "public/data", file)),
+  }));
+const fonts = fs
+  .readdirSync(path.join(root, "public/fonts"))
+  .filter((file) => file.endsWith(".woff2"))
+  .sort()
+  .map((file) => ({
+    file: "fonts/" + file,
+    source: fs.readFileSync(path.join(root, "public/fonts", file)),
+  }));
+const rawFontCss = fs.readFileSync(
+  path.join(root, "public/fonts/fonts.css"),
+  "utf8",
+);
+const version = createHash("sha256")
+  .update(
+    Buffer.concat(
+      [...data, ...fonts].flatMap((item) => [
+        Buffer.from(item.file),
+        item.source,
+      ]),
+    ),
+  )
+  .update(rawFontCss)
+  .digest("hex")
+  .slice(0, 16);
+const prefix = "assets/content/" + version + "/";
+const fontCss = rawFontCss.replaceAll("/fonts/", "/" + prefix + "fonts/");
+const resources = [
+  ...data,
+  ...fonts,
+  { file: "fonts/fonts.css", source: Buffer.from(fontCss) },
+];
 export default defineConfig({
-  server: {
-    port: 3000,
-    host: '0.0.0.0',
-  },
+  server: { port: 3000, host: "0.0.0.0" },
+  define: { "import.meta.env.VITE_CONTENT_VERSION": JSON.stringify(version) },
   plugins: [
     react(),
+    {
+      name: "immutable-content",
+      apply: "build",
+      transformIndexHtml(html) {
+        return html.replaceAll("/fonts/", "/" + prefix + "fonts/");
+      },
+      generateBundle() {
+        for (const item of resources)
+          this.emitFile({
+            type: "asset",
+            fileName: prefix + item.file,
+            source: item.source,
+          });
+        this.emitFile({
+          type: "asset",
+          fileName: prefix + "offline-manifest.json",
+          source: JSON.stringify({
+            version,
+            resources: resources.map((item) => ({
+              url: "/" + prefix + item.file,
+              sha256: createHash("sha256").update(item.source).digest("hex"),
+            })),
+          }),
+        });
+      },
+    },
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: "prompt",
+      injectRegister: null,
       manifest: {
-        name: 'Hizbul Azam — Dua der Woche',
-        short_name: 'Hizbul Azam',
-        description: 'Die Duas der Woche, arabisch mit Übersetzung — offline verfügbar.',
-        lang: 'de',
-        dir: 'ltr',
-        theme_color: '#1B4332',
-        background_color: '#F7F5F0',
-        display: 'standalone',
-        start_url: '/',
-        scope: '/',
+        name: "Hizbul Azam — Dua der Woche",
+        short_name: "Hizbul Azam",
+        description:
+          "Die Duas der Woche, arabisch mit Übersetzung — offline verfügbar.",
+        lang: "de",
+        dir: "ltr",
+        theme_color: "#1B4332",
+        background_color: "#F7F5F0",
+        display: "standalone",
+        start_url: "/",
+        scope: "/",
         icons: [
-          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-          { src: 'icon.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any' },
+          {
+            src: "icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "icon-maskable.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
+            src: "icon.svg",
+            sizes: "512x512",
+            type: "image/svg+xml",
+            purpose: "any",
+          },
         ],
       },
       workbox: {
-        // Nur Code und Icons vorladen - Daten und Schriften kommen beim ersten
-        // Gebrauch in den Cache und bleiben dort (siehe runtimeCaching).
-        globPatterns: ['**/*.{js,css,html}'],
-        navigateFallback: '/index.html',
+        globPatterns: ["**/*.{js,css,html}"],
+        clientsClaim: true,
+        navigateFallback: "/index.html",
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            // Tagesdaten: sofort aus dem Cache, im Hintergrund aktualisieren
-            urlPattern: /\/data\/.*\.json$/,
-            handler: 'StaleWhileRevalidate',
+            urlPattern: /\/assets\/content\/[a-f0-9]+\//,
+            handler: "CacheFirst",
             options: {
-              cacheName: 'hza-data',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            // Schriften ändern sich nie
-            urlPattern: /\/fonts\/.*\.woff2$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'hza-fonts',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
+              cacheName: "hza-content-v1",
+              expiration: {
+                maxEntries: 160,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: { statuses: [200] },
             },
           },
         ],
       },
     }),
   ],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, '.'),
-    },
-  },
+  resolve: { alias: { "@": path.resolve(root, ".") } },
   build: {
-    target: 'es2020',
+    target: "es2020",
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules')) return 'vendor';
-          return undefined;
+          if (id.includes("node_modules")) return "vendor";
         },
       },
     },

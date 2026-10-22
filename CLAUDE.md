@@ -8,7 +8,7 @@ PWA mit den Duas des Hizbul Azam (arabischer Text, Transkription, Übersetzung i
 Deutsch/Englisch/Französisch), Dark Mode, Offline-Betrieb, Favoriten.
 Keine Accounts, kein Backend, keine Nutzerdaten.
 
-- Stack: React 19 · Vite 6 · TypeScript strict · Tailwind (Build) · `vite-plugin-pwa`
+- Stack: React 19 · Vite 6 · TypeScript strict · Tailwind 4 (Build) · `vite-plugin-pwa`
 - Repo: `fecbatino/hizbulazam` (public), Default-Branch `main`
 - Lokaler Checkout (Windows): `Documents/Dev/hizbulazam`
 - Produktion: https://hza.fechal-batakpale.com
@@ -42,7 +42,7 @@ npm run dev           # Vite Dev-Server, Port 3000
 npm run build         # Produktionsbuild -> dist/
 npm run typecheck     # tsc --noEmit
 npm run lint          # eslint
-npm run test          # vitest (18 Tests)
+npm run test          # Vitest (22 Tests)
 npm run preview       # dist/ lokal ansehen
 ```
 
@@ -54,8 +54,8 @@ Vor jedem Commit müssen `typecheck`, `lint`, `test` und `build` grün sein.
 Push auf main ──► GitHub Actions
    Job "Prüfen":  npm ci → typecheck → lint → test → build
    Job "Ausliefern" (environment: production, needs: verify)
-      rsync dist/ → root@159.69.204.155:/opt/stacks/hizbulazam/dist/
-      docker compose up -d
+      Artefakt → /opt/stacks/hizbulazam/releases/<commit>/
+      deploy/publish.sh → /var/www/hza (Assets zuerst, Einstiegspunkte atomar)
    Smoke-Test: / · /manifest.webmanifest · /data/collections.json == 200
 ```
 
@@ -94,7 +94,7 @@ Branch-Namen: `claude/<thema>-<YYYYMMDD>` bzw. `codex/<thema>-<YYYYMMDD>`.
 |---|---|---|
 | UI-Strings teils englisch, teils deutsch | `App.tsx`, `components/*` | offen |
 | `metadata.json` ohne Funktion | Root | offen |
-| Keine Tests für Tageswechsel/Swipe | `hooks/useSwipe.ts` | offen |
+| Tageswechsel/Scrollen | `e2e/reading.spec.ts` | Regressionstests; Tageswechsel nur ausdrücklich |
 
 ## Arbeitsweise
 

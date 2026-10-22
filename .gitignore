@@ -30,3 +30,8 @@ dist-ssr
 
 # Laufzeit-Konfiguration (Pfad zum Webroot)
 .env
+
+/test-results/
+/playwright-report/
+/build-check.log
+/releases/

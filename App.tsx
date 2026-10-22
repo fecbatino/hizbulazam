@@ -1,31 +1,39 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BottomNav, BottomTab } from './components/BottomNav';
-import { DayNavigator } from './components/DayNavigator';
-import { DuaCard } from './components/DuaCard';
-import { LanguageSelector } from './components/LanguageSelector';
-import { AppSettings } from './components/SettingsModal';
-import { DATE_DAY_TO_ORDER_INDEX, DAYS_ORDER } from './constants';
-import { findDayByDuaId, loadAllDays, loadDay, useCollectionsMeta } from './hooks/useCollections';
-import { scrollToDua, setDayHash, setDuaHash, useDeepLink } from './hooks/useDeepLink';
-import { useSwipe } from './hooks/useSwipe';
-import { DuaCollection, DuaItem, Language } from './types';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { BottomNav, BottomTab } from "./components/BottomNav";
+import { DayNavigator } from "./components/DayNavigator";
+import { DuaCard } from "./components/DuaCard";
+import { LanguageSelector } from "./components/LanguageSelector";
+import { Icon } from "./components/icons";
+import { UpdateNotice } from "./components/UpdateNotice";
+import type { AppSettings } from "./components/SettingsModal";
+import { DATE_DAY_TO_ORDER_INDEX, DAYS_ORDER } from "./constants";
+import {
+  findDayByDuaId,
+  loadAllDays,
+  loadDay,
+  useCollectionsMeta,
+} from "./hooks/useCollections";
+import { setDayHash, setDuaHash, useDeepLink } from "./hooks/useDeepLink";
+import { Jump, useReadingPosition } from "./hooks/useReadingPosition";
+import { UI } from "./lib/ui";
+import { DuaCollection, DuaItem, Language } from "./types";
 
 const DaySelectorModal = React.lazy(() =>
-  import('./components/DaySelectorModal').then(module => ({ default: module.DaySelectorModal }))
+  import("./components/DaySelectorModal").then((m) => ({
+    default: m.DaySelectorModal,
+  })),
 );
 const SettingsModal = React.lazy(() =>
-  import('./components/SettingsModal').then(module => ({ default: module.SettingsModal }))
+  import("./components/SettingsModal").then((m) => ({
+    default: m.SettingsModal,
+  })),
 );
 const SearchModal = React.lazy(() =>
-  import('./components/SearchModal').then(module => ({ default: module.SearchModal }))
+  import("./components/SearchModal").then((m) => ({ default: m.SearchModal })),
 );
-
-const FAVORITES_STORAGE_KEY = 'dailyDuaFavorites';
-const SETTINGS_STORAGE_KEY = 'dailyDuaAppSettings';
-const THEME_STORAGE_KEY = 'dailyDuaTheme';
-
-type Theme = 'light' | 'dark';
-
+const FAVORITES_STORAGE_KEY = "dailyDuaFavorites",
+  SETTINGS_STORAGE_KEY = "dailyDuaAppSettings",
+  THEME_STORAGE_KEY = "dailyDuaTheme";
 const defaultSettings: AppSettings = {
   showFavorites: true,
   showShare: true,
@@ -33,515 +41,427 @@ const defaultSettings: AppSettings = {
   translationFontSize: 1,
   showTranslation: true,
 };
-
-// ── Error Banner ──────────────────────────────────────────────────────────────
-const ErrorDisplay: React.FC<{ message: string; onDismiss: () => void }> = ({ message, onDismiss }) => (
-  <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-[100] flex items-start max-w-sm" role="alert">
-    <div className="flex-grow">
-      <p className="font-bold">Fehler</p>
-      <p className="text-sm">{message}</p>
-    </div>
-    <button onClick={onDismiss} className="ml-4 p-1" aria-label="Schließen">✕</button>
-  </div>
-);
-
-// ── Favorites View ────────────────────────────────────────────────────────────
-const EMPTY_FAV: Record<Language, string> = {
-  en: 'No favorites yet — tap the ☆ on any dua to save it.',
-  de: 'Noch keine Favoriten — tippe auf ☆ bei einem Dua.',
-  fr: 'Aucun favori encore — appuie sur ☆ sur un dua.',
-  ar: 'لا توجد مفضلات بعد — اضغط على ☆ لحفظ دعاء.',
-};
-
-const FAV_TITLE: Record<Language, string> = {
-  en: 'Favorites', de: 'Favoriten', fr: 'Favoris', ar: 'المفضلة',
-};
-
-const FavoritesView: React.FC<{
-  favorites: Set<string>;
-  duas: DuaItem[] | null;
-  language: Language;
-  onToggleFavorite: (id: string) => void;
-  showShare: boolean;
-  translationFontSize: number;
-  showTranslation: boolean;
-}> = ({ favorites, duas, language, onToggleFavorite, showShare, translationFontSize, showTranslation }) => {
-  const favDuas = useMemo(
-    () => (duas ?? []).filter(dua => favorites.has(dua.id)),
-    [duas, favorites]
-  );
-
-  return (
-    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-      <div style={{
-        background: 'var(--hza-card)',
-        borderBottom: '1px solid var(--hza-border)',
-        padding: '14px 16px',
-        textAlign: 'center',
-        fontFamily: "'Playfair Display', serif",
-        fontWeight: 600,
-        fontSize: 18,
-        color: 'var(--hza-text)',
-      }}>
-        {FAV_TITLE[language]}
-      </div>
-
-      {duas === null ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: 'var(--hza-hint)' }}>
-            {language === 'ar' ? 'جارٍ التحميل …' : 'Lädt …'}
-          </p>
-        </div>
-      ) : favDuas.length === 0 ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: 'var(--hza-hint)', textAlign: 'center', lineHeight: 1.6 }}>
-            {EMPTY_FAV[language]}
-          </p>
-        </div>
-      ) : (
-        <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {favDuas.map(dua => {
-            const translation = language === 'de' ? dua.translation_de : language === 'fr' ? dua.translation_fr : language === 'ar' ? '' : dua.translation_en;
-            const sourceCtx = language === 'de' ? dua.source_context_de : language === 'fr' ? dua.source_context_fr : dua.source_context_en;
-            const sourceRef = dua.primary_sources?.length ? dua.primary_sources.map(s => `${s.book} ${s.ref}`).join(', ') : '';
-            const footerText = sourceRef ? `${sourceRef} · ${sourceCtx}` : sourceCtx;
-
-            return (
-              <article key={dua.id} style={{ background: 'var(--hza-card)', borderRadius: 16, border: '1px solid var(--hza-border)', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '10px 14px 8px', borderBottom: '1px solid var(--hza-border)', gap: 8 }}>
-                  <button
-                    onClick={() => onToggleFavorite(dua.id)}
-                    aria-label="Aus Favoriten entfernen"
-                    style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--hza-border)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'var(--hza-gold)' }}
-                  >★</button>
-                  {showShare && (
-                    <button
-                      onClick={async () => {
-                        const text = `${dua.arabic_text}${translation ? `\n\n${translation}` : ''}\n\n${sourceCtx}`;
-                        if (navigator.share) { try { await navigator.share({ text }); } catch { /* abgebrochen */ } }
-                        else { try { await navigator.clipboard.writeText(text); } catch { /* Clipboard gesperrt */ } }
-                      }}
-                      aria-label="Teilen"
-                      style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--hza-border)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'var(--hza-hint)' }}
-                    >↗</button>
-                  )}
-                </div>
-                <p lang="ar" dir="rtl" style={{ fontFamily: "'Amiri', serif", fontSize: 'var(--arabic-font-size, 1.9rem)', lineHeight: 2.2, textAlign: 'center', color: 'var(--hza-text)', padding: '16px 16px', margin: 0 }}>
-                  {dua.arabic_text}
-                </p>
-                {showTranslation && language !== 'ar' && translation && (
-                  <>
-                    <div style={{ height: 1, background: 'var(--hza-border)', margin: '0 14px' }} />
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: `${translationFontSize}rem`, fontStyle: 'italic', color: 'var(--hza-muted)', padding: '12px 14px', lineHeight: 1.6, margin: 0 }}>
-                      {translation}
-                    </p>
-                  </>
-                )}
-                {footerText && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px 12px' }}>
-                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--hza-green)', flexShrink: 0 }} />
-                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--hza-hint)', lineHeight: 1.4 }}>{footerText}</span>
-                  </div>
-                )}
-              </article>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ── Theme toggle button (styled for green header) ─────────────────────────────
-const ThemeToggleButton: React.FC<{ theme: Theme; onToggle: () => void }> = ({ theme, onToggle }) => (
-  <button
-    onClick={onToggle}
-    aria-label={theme === 'light' ? 'Dunkelmodus' : 'Hellmodus'}
-    style={{
-      background: 'rgba(0,0,0,0.2)',
-      border: '1px solid rgba(255,255,255,0.3)',
-      borderRadius: 8,
-      padding: '7px 10px',
-      color: 'white',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: 16,
-    }}
-  >
-    {theme === 'light' ? '🌙' : '☀️'}
-  </button>
-);
-
-// ── Pinch distance helper ─────────────────────────────────────────────────────
-const getDistance = (touches: React.TouchList) => {
-  const [t1, t2] = [touches[0], touches[1]];
-  return Math.sqrt(Math.pow(t2.clientX - t1.clientX, 2) + Math.pow(t2.clientY - t1.clientY, 2));
-};
-
-// ── App ───────────────────────────────────────────────────────────────────────
-const App: React.FC = () => {
-  const [error, setError] = useState<string | null>(null);
-  const { meta, error: metaError } = useCollectionsMeta();
+function read<T>(key: string, fallback: T): T {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "null") ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+function initialSettings(): AppSettings {
+  const value = read<Partial<AppSettings>>(SETTINGS_STORAGE_KEY, {});
+  const result = { ...defaultSettings };
+  for (const key of ["showFavorites", "showShare", "showTranslation"] as const)
+    if (typeof value[key] === "boolean") result[key] = value[key];
+  for (const [key, min, max] of [
+    ["arabicFontSize", 1.25, 3],
+    ["translationFontSize", 0.8, 1.75],
+  ] as const) {
+    if (typeof value[key] === "number" && Number.isFinite(value[key]))
+      result[key] = Math.max(min, Math.min(max, value[key]!));
+  }
+  return result;
+}
+function App() {
+  const { meta, error: metaError, retry: retryMeta } = useCollectionsMeta();
   const deepLink = useDeepLink();
-
-  const getInitialDayIndex = (): number => {
-    try { return DATE_DAY_TO_ORDER_INDEX[new Date().getDay()] ?? 0; }
-    catch { return 0; }
-  };
-
-  const [currentDayIndex, setCurrentDayIndex] = useState<number>(getInitialDayIndex);
+  const [error, setError] = useState<string | null>(null);
+  const [currentDayIndex, setCurrentDayIndex] = useState(
+    () => DATE_DAY_TO_ORDER_INDEX[new Date().getDay()] ?? 0,
+  );
   const [collection, setCollection] = useState<DuaCollection | null>(null);
-  const [collectionError, setCollectionError] = useState<string | null>(null);
+  const [collectionError, setCollectionError] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [allDuas, setAllDuas] = useState<DuaItem[] | null>(null);
+  const [favoritesError, setFavoritesError] = useState(false);
+  const [favoritesRetry, setFavoritesRetry] = useState(0);
   const [pendingDua, setPendingDua] = useState<string | null>(null);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [jump, setJump] = useState<Jump>(null);
   const [linkResolved, setLinkResolved] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-
-  const [language, setLanguage] = useState<Language>('de');
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+  const [language, setLanguage] = useState<Language>(() => {
+    const lang = read<Language>("hzaLanguage", "de");
+    return ["de", "en", "fr", "ar"].includes(lang) ? lang : "de";
+  });
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    const values = read<unknown>(FAVORITES_STORAGE_KEY, []);
+    return new Set(
+      Array.isArray(values)
+        ? values.filter((id): id is string => typeof id === "string")
+        : [],
+    );
+  });
+  const [settings, setSettings] = useState(initialSettings);
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const value = read<string>(THEME_STORAGE_KEY, "");
+    // Older releases stored the theme as a raw string, rather than JSON.
+    let legacy = "";
+    try {
+      legacy = localStorage.getItem(THEME_STORAGE_KEY) || "";
+    } catch {}
+    if (value === "dark" || legacy === "dark") return "dark";
+    if (value === "light" || legacy === "light") return "light";
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  });
+  const [activeView, setActiveView] = useState<"duas" | "favorites">("duas");
   const [isDaySelectorOpen, setIsDaySelectorOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [theme, setTheme] = useState<Theme>('light');
-  const [activeView, setActiveView] = useState<'duas' | 'favorites'>('duas');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const paused = isDaySelectorOpen || isSettingsOpen || isSearchOpen;
+  const day = meta?.[currentDayIndex]?.day;
+  const ready = !!collection && collection.day === day;
+  const { currentDua, savePosition } = useReadingPosition(
+    day,
+    ready,
+    activeView === "duas",
+    paused,
+    jump,
+  );
+  const t = UI[language];
+  const favDuas = useMemo(
+    () => (allDuas ?? []).filter((dua) => favorites.has(dua.id)),
+    [allDuas, favorites],
+  );
 
-  // ── Persistenz ──
   useEffect(() => {
-    let initError: string | null = null;
     try {
-      const s = localStorage.getItem(FAVORITES_STORAGE_KEY);
-      if (s) setFavorites(new Set(JSON.parse(s)));
-    } catch { initError = 'Favoriten konnten nicht geladen werden.'; }
-
+      localStorage.setItem(
+        FAVORITES_STORAGE_KEY,
+        JSON.stringify([...favorites]),
+      );
+    } catch {
+      setError(UI[language].error);
+    }
+  }, [favorites, language]);
+  useEffect(() => {
     try {
-      const s = localStorage.getItem(SETTINGS_STORAGE_KEY);
-      if (s) {
-        const parsed = JSON.parse(s);
-        setSettings({ ...defaultSettings, ...parsed, translationFontSize: parsed.translationFontSize ?? defaultSettings.translationFontSize });
-      }
-    } catch { if (!initError) initError = 'Einstellungen konnten nicht geladen werden.'; }
-
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch {
+      setError(UI[language].error);
+    }
+  }, [settings, language]);
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", theme === "dark" ? "#141E19" : "#1B4332");
     try {
-      const s = localStorage.getItem(THEME_STORAGE_KEY);
-      if (s === 'dark' || s === 'light') setTheme(s);
-      else if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) setTheme('dark');
-    } catch { if (!initError) initError = 'Design-Einstellung konnte nicht geladen werden.'; }
-
-    if (initError) setError(initError);
-  }, []);
-
-  const pinchStartDist = useRef(0);
-  const pinchStartFontSize = useRef(settings.arabicFontSize);
-  const pinchStartTranslationFontSize = useRef(settings.translationFontSize);
-
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      setError(UI[language].error);
+    }
+  }, [theme, language]);
   useEffect(() => {
-    try { localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(Array.from(favorites))); }
-    catch { setError('Favoriten konnten nicht gespeichert werden.'); }
-  }, [favorites]);
-
-  useEffect(() => {
-    try { localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings)); }
-    catch { setError('Einstellungen konnten nicht gespeichert werden.'); }
-  }, [settings]);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    try { localStorage.setItem(THEME_STORAGE_KEY, theme); }
-    catch { setError('Design-Einstellung konnte nicht gespeichert werden.'); }
-  }, [theme]);
-
-  useEffect(() => {
-    const html = document.documentElement;
-    if (language === 'ar') { html.setAttribute('lang', 'ar'); html.setAttribute('dir', 'rtl'); }
-    else { html.setAttribute('lang', language); html.setAttribute('dir', 'ltr'); }
+    document.documentElement.lang = language;
+    document.documentElement.dir = "ltr";
+    try {
+      localStorage.setItem("hzaLanguage", JSON.stringify(language));
+    } catch {
+      /* Language still works without persistence. */
+    }
   }, [language]);
-
   useEffect(() => {
-    const online = () => setIsOffline(false);
-    const offline = () => setIsOffline(true);
-    window.addEventListener('online', online);
-    window.addEventListener('offline', offline);
+    const online = () => setIsOffline(false),
+      offline = () => setIsOffline(true);
+    window.addEventListener("online", online);
+    window.addEventListener("offline", offline);
     return () => {
-      window.removeEventListener('online', online);
-      window.removeEventListener('offline', offline);
+      window.removeEventListener("online", online);
+      window.removeEventListener("offline", offline);
     };
   }, []);
-
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (isSettingsOpen) setIsSettingsOpen(false);
-      else if (isDaySelectorOpen) setIsDaySelectorOpen(false);
-      else if (isSearchOpen) setIsSearchOpen(false);
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isSettingsOpen, isDaySelectorOpen, isSearchOpen]);
-
-  // ── Daten: Tag laden ──
-  useEffect(() => {
-    if (!meta) return;
-    const entry = meta[currentDayIndex];
-    if (!entry) return;
+    if (!day || !linkResolved) return;
     let alive = true;
     setCollection(null);
-    setCollectionError(null);
-    loadDay(entry.day)
-      .then(next => { if (alive) setCollection(next); })
-      .catch(err => { if (alive) setCollectionError(err instanceof Error ? err.message : String(err)); });
-    return () => { alive = false; };
-  }, [meta, currentDayIndex]);
-
-  // ── Deep Links auflösen ──
+    setCollectionError(false);
+    loadDay(day)
+      .then((next) => {
+        if (alive) setCollection(next);
+      })
+      .catch(() => {
+        if (alive) setCollectionError(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [day, linkResolved, retry]);
   useEffect(() => {
     if (!meta) return;
-    if (deepLink?.kind === 'day') {
-      const index = meta.findIndex(entry => entry.day === deepLink.day);
-      if (index >= 0) setCurrentDayIndex(index);
-    } else if (deepLink?.kind === 'dua') {
+    if (deepLink?.kind === "day") {
+      const index = meta.findIndex((entry) => entry.day === deepLink.day);
+      if (index >= 0) {
+        setCurrentDayIndex(index);
+        setPendingDua(null);
+        setJump(null);
+        setActiveView("duas");
+      }
+    } else if (deepLink?.kind === "dua") {
       const entry = findDayByDuaId(meta, deepLink.id);
       if (entry) {
-        setCurrentDayIndex(entry.order);
+        setCurrentDayIndex(meta.indexOf(entry));
         setPendingDua(deepLink.id);
-        setActiveView('duas');
+        setJump((previous) => ({
+          id: deepLink.id,
+          sequence: (previous?.sequence ?? 0) + 1,
+        }));
+        setActiveView("duas");
       }
     }
-    // Erst nach dieser Runde darf der Tages-Hash geschrieben werden, sonst
-    // überschreibt er den Dua-Link, bevor er gelesen ist.
     setLinkResolved(true);
   }, [meta, deepLink]);
-
-  // Hash nachführen, solange kein Dua-Sprung offen ist
   useEffect(() => {
-    if (!meta || !meta[currentDayIndex] || pendingDua || !linkResolved) return;
-    setDayHash(meta[currentDayIndex].day);
-  }, [meta, currentDayIndex, pendingDua, linkResolved]);
-
-  // Sprung zur Dua, sobald die Sammlung da ist. pendingDua bleibt gesetzt, damit
-  // der Hash auf #/dua/<id> stehen bleibt (teilbare Links) - erst eine manuelle
-  // Tagesnavigation loest ihn wieder.
-  const scrolledRef = useRef<string | null>(null);
+    if (day && linkResolved && !pendingDua) setDayHash(day);
+  }, [day, linkResolved, pendingDua]);
   useEffect(() => {
-    if (!collection || !pendingDua || scrolledRef.current === pendingDua) return;
-    const id = pendingDua;
-    const raf = window.requestAnimationFrame(() => {
-      scrollToDua(id);
-      scrolledRef.current = id;
-    });
-    return () => window.cancelAnimationFrame(raf);
-  }, [collection, pendingDua]);
-
-  // Favoriten brauchen alle Tage - erst laden, wenn die Ansicht sie zeigt
-  useEffect(() => {
-    if (activeView !== 'favorites' || allDuas || !meta) return;
+    if (activeView !== "favorites" || allDuas || !meta) return;
     let alive = true;
+    setFavoritesError(false);
     loadAllDays(meta)
-      .then(collections => { if (alive) setAllDuas(collections.flatMap(item => item.duas)); })
-      .catch(err => { if (alive) setError(err instanceof Error ? err.message : String(err)); });
-    return () => { alive = false; };
-  }, [activeView, allDuas, meta]);
+      .then((days) => {
+        if (alive) setAllDuas(days.flatMap((item) => item.duas));
+      })
+      .catch(() => {
+        if (alive) setFavoritesError(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [activeView, allDuas, meta, favoritesRetry]);
 
-  const handleSettingsChange = useCallback((newSettings: Partial<AppSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
-  }, []);
-
-  const toggleTheme = useCallback(() => setTheme(previous => previous === 'light' ? 'dark' : 'light'), []);
-
-  const handleNextDay = useCallback(() => {
+  const changeSettings = useCallback(
+    (value: Partial<AppSettings>) =>
+      setSettings((previous) => ({ ...previous, ...value })),
+    [],
+  );
+  const toggleFavorite = useCallback(
+    (id: string) =>
+      setFavorites((previous) => {
+        const next = new Set(previous);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      }),
+    [],
+  );
+  const selectDay = (index: number) => {
+    savePosition();
     setPendingDua(null);
-    setCurrentDayIndex(index => (index + 1) % (meta?.length ?? DAYS_ORDER.length));
-  }, [meta]);
-
-  const handlePrevDay = useCallback(() => {
-    setPendingDua(null);
-    setCurrentDayIndex(index => (index - 1 + (meta?.length ?? DAYS_ORDER.length)) % (meta?.length ?? DAYS_ORDER.length));
-  }, [meta]);
-
-  const handleSelectDay = (index: number) => {
-    setPendingDua(null);
+    setJump(null);
     setCurrentDayIndex(index);
+    setActiveView("duas");
     setIsDaySelectorOpen(false);
   };
-
-  const toggleFavorite = useCallback((duaId: string) => {
-    setFavorites(previous => {
-      const next = new Set(previous);
-      if (next.has(duaId)) next.delete(duaId); else next.add(duaId);
-      return next;
-    });
-  }, []);
-
-  const handleTabChange = useCallback((tab: BottomTab) => {
-    if (tab === 'duas') setActiveView('duas');
-    else if (tab === 'favorites') setActiveView('favorites');
-    else if (tab === 'days') setIsDaySelectorOpen(true);
-    else if (tab === 'settings') setIsSettingsOpen(true);
-  }, []);
-
-  const handleSearchSelect = useCallback((day: string, duaId: string) => {
-    const entry = meta?.find(item => item.day === day);
-    if (!entry) return;
-    setActiveView('duas');
-    setCurrentDayIndex(entry.order);
-    setPendingDua(duaId);
-    setDuaHash(duaId);
-  }, [meta]);
-
-  const swipeHandlers = useSwipe({ onSwipedLeft: handleNextDay, onSwipedRight: handlePrevDay });
-
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    swipeHandlers.onTouchStart(e);
-    if (e.touches.length === 2) {
-      pinchStartDist.current = getDistance(e.touches);
-      pinchStartFontSize.current = settings.arabicFontSize;
-      pinchStartTranslationFontSize.current = settings.translationFontSize;
-    }
-  }, [settings.arabicFontSize, settings.translationFontSize, swipeHandlers]);
-
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    swipeHandlers.onTouchMove(e);
-    if (e.touches.length === 2) {
-      const currentDist = getDistance(e.touches);
-      const scale = currentDist / pinchStartDist.current;
-      pinchStartDist.current = currentDist;
-      setSettings(prev => ({
-        ...prev,
-        arabicFontSize: Math.max(1.25, Math.min(3, prev.arabicFontSize * scale)),
-        translationFontSize: Math.max(0.75, Math.min(1.75, prev.translationFontSize * scale)),
-      }));
-    }
-  }, [swipeHandlers]);
-
-  const activeTab: BottomTab = activeView === 'favorites' ? 'favorites' : 'duas';
-  const banner = error ?? metaError ?? (collectionError ? `Inhalt konnte nicht geladen werden (${collectionError}).` : null);
-
+  const changeTab = (tab: BottomTab) => {
+    savePosition();
+    if (tab === "duas" || tab === "favorites") setActiveView(tab);
+    else if (tab === "days") setIsDaySelectorOpen(true);
+    else setIsSettingsOpen(true);
+  };
+  const searchSelect = (selectedDay: string, id: string) => {
+    const index = meta?.findIndex((entry) => entry.day === selectedDay) ?? -1;
+    if (index < 0) return;
+    setCurrentDayIndex(index);
+    setPendingDua(id);
+    setJump((previous) => ({ id, sequence: (previous?.sequence ?? 0) + 1 }));
+    setActiveView("duas");
+    setDuaHash(id);
+  };
+  const openDaySelector = () => {
+    savePosition();
+    setIsDaySelectorOpen(true);
+  };
+  const restart = () => {
+    savePosition();
+    const id = collection?.duas[0]?.id;
+    if (id)
+      setJump((previous) => ({ id, sequence: (previous?.sequence ?? 0) + 1 }));
+    setPendingDua(null);
+    setIsDaySelectorOpen(false);
+  };
+  const cardProps = {
+    language,
+    favorites,
+    onToggleFavorite: toggleFavorite,
+    showTranslation: settings.showTranslation,
+    showFavorites: settings.showFavorites,
+    showShare: settings.showShare,
+    translationFontSize: settings.translationFontSize,
+  };
+  const retryButton = (action: () => void) => (
+    <div className="empty-state" role="alert">
+      <p>{t.loadError}</p>
+      <button onClick={action}>{t.retry}</button>
+    </div>
+  );
   return (
     <div
       className="app-container"
-      style={{ '--arabic-font-size': `${settings.arabicFontSize}rem` } as React.CSSProperties}
+      style={
+        {
+          "--arabic-font-size": settings.arabicFontSize + "rem",
+        } as React.CSSProperties
+      }
     >
-      {banner && <ErrorDisplay message={banner} onDismiss={() => { setError(null); setCollectionError(null); }} />}
-      {isOffline && (
-        <div role="status" className="bg-amber-100 text-amber-900 text-center text-sm py-1">
-          Offline — gespeicherte Inhalte bleiben verfügbar.
+      {error && (
+        <div className="offline-banner" role="alert">
+          {error}
+          <button
+            className="icon-button"
+            onClick={() => setError(null)}
+            aria-label={t.close}
+          >
+            <Icon name="close" />
+          </button>
         </div>
       )}
-
-      {/* ── Header ── */}
-      <header style={{
-        background: 'var(--hza-green)',
-        padding: '18px 20px 14px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 600, fontSize: 19, color: '#fff', lineHeight: 1.1, letterSpacing: '0.01em' }}>
-            Hizbul Azam
-          </span>
-          <span style={{ fontFamily: "'Amiri', serif", fontSize: 15, color: 'var(--hza-gold)', direction: 'rtl', lineHeight: 1.4 }}>
+      {isOffline && (
+        <div className="offline-banner" role="status">
+          {t.offline}
+        </div>
+      )}
+      <header className="app-header" data-dialog-background>
+        <div className="brand">
+          <span className="brand-title">Hizbul Azam</span>
+          <span className="brand-arabic" lang="ar" dir="rtl">
             حِزْبُ الأَعْظَم
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="header-actions">
           <button
-            onClick={() => setIsSearchOpen(true)}
-            aria-label="Suche"
-            style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '7px 10px', color: 'white', cursor: 'pointer', fontSize: 15 }}
+            className="icon-button"
+            onClick={() => {
+              savePosition();
+              setIsSearchOpen(true);
+            }}
+            aria-label={t.search}
+            aria-haspopup="dialog"
           >
-            ⌕
+            <Icon name="search" />
           </button>
-          <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
-          <LanguageSelector currentLanguage={language} onLanguageChange={setLanguage} />
+          <button
+            className="icon-button"
+            onClick={() =>
+              setTheme((previous) => (previous === "light" ? "dark" : "light"))
+            }
+            aria-label={theme === "light" ? t.dark : t.light}
+          >
+            <Icon name={theme === "light" ? "moon" : "sun"} />
+          </button>
+          <LanguageSelector
+            currentLanguage={language}
+            onLanguageChange={(next) => {
+              savePosition();
+              setLanguage(next);
+            }}
+          />
         </div>
       </header>
-
-      {/* ── Main content ── */}
-      {activeView === 'duas' ? (
-        <>
-          {!collection ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", color: 'var(--hza-muted)', textAlign: 'center' }} role="status">
-                {collectionError ? 'Inhalt konnte nicht geladen werden.' : 'Lädt …'}
-              </p>
-            </div>
-          ) : (
-            <>
-              <DayNavigator
-                dayName={collection.name[language]}
-                dayNameAr={language !== 'ar' ? collection.name['ar'] : undefined}
-                onPrev={handlePrevDay}
-                onNext={handleNextDay}
-                onDayNameClick={() => setIsDaySelectorOpen(true)}
-                isRtl={language === 'ar'}
-                currentDayIndex={currentDayIndex}
-                totalDays={meta?.length ?? 1}
-              />
-              <div
-                style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
-                onTouchStart={onTouchStart}
-                onTouchMove={onTouchMove}
-                onTouchEnd={swipeHandlers.onTouchEnd}
-              >
-                <DuaCard
-                  collection={collection}
-                  language={language}
-                  favorites={favorites}
-                  onToggleFavorite={toggleFavorite}
-                  showTranslation={settings.showTranslation}
-                  showFavorites={settings.showFavorites}
-                  showShare={settings.showShare}
-                  translationFontSize={settings.translationFontSize}
-                />
-              </div>
-            </>
-          )}
-        </>
-      ) : (
-        <FavoritesView
-          favorites={favorites}
-          duas={allDuas}
+      {activeView === "duas" && meta && (
+        <DayNavigator
+          dayName={meta[currentDayIndex].name[language]}
+          dayNameAr={
+            language !== "ar" ? meta[currentDayIndex].name.ar : undefined
+          }
+          onPrev={() =>
+            selectDay(
+              (currentDayIndex - 1 + (meta.length || DAYS_ORDER.length)) %
+                meta.length,
+            )
+          }
+          onNext={() => selectDay((currentDayIndex + 1) % meta.length)}
+          onDayNameClick={openDaySelector}
+          currentDayIndex={currentDayIndex}
+          totalDays={meta.length}
           language={language}
-          onToggleFavorite={toggleFavorite}
-          showShare={settings.showShare}
-          translationFontSize={settings.translationFontSize}
-          showTranslation={settings.showTranslation}
+          currentDua={currentDua}
+          totalDuas={meta[currentDayIndex].count}
         />
       )}
-
-      {/* ── Bottom Nav ── */}
-      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} language={language} />
-
-      {/* ── Modals ── */}
+      <main
+        className="reading-content"
+        data-dialog-background
+        aria-busy={
+          activeView === "duas" && !ready && !collectionError && !metaError
+        }
+      >
+        {activeView === "duas" ? (
+          metaError ? (
+            retryButton(retryMeta)
+          ) : collectionError ? (
+            retryButton(() => setRetry((n) => n + 1))
+          ) : ready && collection ? (
+            <DuaCard collection={collection} {...cardProps} />
+          ) : (
+            <p className="empty-state" role="status">
+              {t.loading}
+            </p>
+          )
+        ) : (
+          <>
+            <h1 className="view-title">{t.favorites}</h1>
+            {favoritesError ? (
+              retryButton(() => setFavoritesRetry((n) => n + 1))
+            ) : !allDuas ? (
+              <p className="empty-state" role="status">
+                {t.loading}
+              </p>
+            ) : !favDuas.length ? (
+              <p className="empty-state">{t.emptyFavorites}</p>
+            ) : (
+              <DuaCard
+                collection={{
+                  day: "friday",
+                  name: { de: "", en: "", fr: "", ar: "" },
+                  duas: favDuas,
+                }}
+                {...cardProps}
+                showFavorites
+                showProgress={false}
+              />
+            )}
+          </>
+        )}
+      </main>
+      <BottomNav
+        activeTab={activeView}
+        onTabChange={changeTab}
+        language={language}
+      />
+      <UpdateNotice language={language} onBeforeUpdate={savePosition} />
       <React.Suspense fallback={null}>
-        <DaySelectorModal
-          isOpen={isDaySelectorOpen}
-          onClose={() => setIsDaySelectorOpen(false)}
-          onSelectDay={handleSelectDay}
-          days={(meta ?? []).map(entry => entry.name[language])}
-          currentIndex={currentDayIndex}
-          language={language}
-        />
-        <SettingsModal
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          settings={settings}
-          onSettingsChange={handleSettingsChange}
-          language={language}
-        />
-        <SearchModal
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-          language={language}
-          onSelect={handleSearchSelect}
-        />
+        {isDaySelectorOpen && (
+          <DaySelectorModal
+            isOpen
+            onClose={() => setIsDaySelectorOpen(false)}
+            onSelectDay={selectDay}
+            onRestart={restart}
+            days={(meta ?? []).map((entry) => entry.name[language])}
+            currentIndex={currentDayIndex}
+            language={language}
+          />
+        )}
+        {isSettingsOpen && (
+          <SettingsModal
+            isOpen
+            onClose={() => setIsSettingsOpen(false)}
+            settings={settings}
+            onSettingsChange={changeSettings}
+            language={language}
+          />
+        )}
+        {isSearchOpen && (
+          <SearchModal
+            isOpen
+            onClose={() => setIsSearchOpen(false)}
+            language={language}
+            onSelect={searchSelect}
+          />
+        )}
       </React.Suspense>
     </div>
   );
-};
-
+}
 export default App;
