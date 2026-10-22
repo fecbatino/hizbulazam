@@ -45,14 +45,6 @@ const SETTINGS_T = {
     arabicFont: "Taille de police arabe",
     translationFont: "Taille de police de traduction",
   },
-  ar: {
-    title: "الإعدادات",
-    showFavorites: "إظهار أزرار المفضلة",
-    showShare: "إظهار أزرار المشاركة",
-    showTranslation: "عرض الترجمة",
-    arabicFont: "حجم الخط العربي",
-    translationFont: "حجم خط الترجمة",
-  },
 };
 export function SettingsModal({
   isOpen,
@@ -89,7 +81,6 @@ export function SettingsModal({
           </button>
         </div>
         {(["showFavorites", "showShare", "showTranslation"] as const)
-          .filter((key) => language !== "ar" || key !== "showTranslation")
           .map((key) => (
             <label className="setting-toggle" key={key}>
               <span>{t[key]}</span>

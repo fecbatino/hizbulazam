@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { dataUrl } from "../lib/dataUrl";
-import { DayOfWeek, DuaCollection, Language } from "../types";
+import { DayOfWeek, DuaCollection, NameLanguage } from "../types";
 
 export interface CollectionMeta {
   day: DayOfWeek;
   order: number;
-  name: Record<Language, string>;
+  name: Record<NameLanguage, string>;
   hizbTitle?: string;
   count: number;
   ids: string[];

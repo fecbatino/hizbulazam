@@ -30,15 +30,6 @@ const BADGE: Record<Language, Record<SourceType, string>> = {
     later_supplication: "Supplication Tardive",
     unknown: "Inconnu",
   },
-  ar: {
-    quran: "قرآن",
-    sahih_hadith: "حديث صحيح",
-    hasan_hadith: "حديث حسن",
-    weak_hadith: "حديث ضعيف",
-    ikhtilaf: "اختلاف",
-    later_supplication: "دعاء متأخر",
-    unknown: "غير معروف",
-  },
 };
 interface Props {
   collection: DuaCollection;
@@ -82,9 +73,7 @@ function Entry({
       ? dua.translation_de
       : language === "fr"
         ? dua.translation_fr
-        : language === "ar"
-          ? ""
-          : dua.translation_en;
+        : dua.translation_en;
   const context =
     language === "de"
       ? dua.source_context_de
@@ -169,8 +158,7 @@ function Entry({
           {translation}
         </p>
       )}
-      {/* There is no Arabic source context; the English one stands in. */}
-      <p className="dua-source" lang={language === "ar" ? "en" : undefined}>
+      <p className="dua-source">
         {reference ? reference + " · " : ""}
         {context}
       </p>

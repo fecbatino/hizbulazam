@@ -82,7 +82,8 @@ function App() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [language, setLanguage] = useState<Language>(() => {
     const lang = read<Language>("hzaLanguage", "de");
-    return ["de", "en", "fr", "ar"].includes(lang) ? lang : "de";
+    // Older releases could store "ar"; it falls back to German.
+    return ["de", "en", "fr"].includes(lang) ? lang : "de";
   });
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     const values = read<unknown>(FAVORITES_STORAGE_KEY, []);
@@ -388,9 +389,7 @@ function App() {
       {activeView === "duas" && meta && (
         <DayNavigator
           dayName={meta[currentDayIndex].name[language]}
-          dayNameAr={
-            language !== "ar" ? meta[currentDayIndex].name.ar : undefined
-          }
+          dayNameAr={meta[currentDayIndex].name.ar}
           onPrev={() =>
             selectDay(
               (currentDayIndex - 1 + (meta.length || DAYS_ORDER.length)) %

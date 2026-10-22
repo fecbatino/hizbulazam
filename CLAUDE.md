@@ -110,7 +110,7 @@ Branch-Namen: `claude/<thema>-<YYYYMMDD>` bzw. `codex/<thema>-<YYYYMMDD>`.
 
 | Punkt | Datei | Status |
 |---|---|---|
-| Arabische Oberfläche: nur wählbar, wenn schon gespeichert; Layout bleibt LTR; Quellenkontext fällt auf Englisch zurück (kein `source_context_ar`) | `LanguageSelector.tsx`, `App.tsx`, `DuaCard.tsx` | offen, Produktentscheidung |
+| Arabische UI-Sprache entfernt (kein `source_context_ar`, kein RTL-Layout); gespeichertes `ar` fällt auf Deutsch zurück. Wiederaufnahme erst mit geprüften arabischen Quellenkontexten | `types.ts` (`Language` vs. `NameLanguage`) | entschieden |
 | Bereinigung alter Releases/Assets auf dem Server | `deploy/publish.sh` | offen, braucht Freigabe (löscht in Produktion) |
 | Tageswechsel/Scrollen | `e2e/reading.spec.ts` | Regressionstests; Tageswechsel nur ausdrücklich |
 
