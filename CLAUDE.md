@@ -85,10 +85,13 @@ Push auf main ──► GitHub Actions
 - Secrets: `SSH_KEY`, `HOST`, `PORT`, `USERNAME`; optional `SSH_KNOWN_HOSTS`. Der Deploy-User
   braucht Docker-Rechte und Schreibrechte auf `/opt/stacks/hizbulazam`.
 - Host-Schlüssel: `PIN` im Workflow ist der **ed25519**-Fingerprint des Servers
-  (`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`). `deploy/pin-host-key.sh` behält nur
-  ed25519-Einträge (aus dem Secret oder per `ssh-keyscan -t ed25519`), verlangt, dass **jeder**
-  davon dem Pin entspricht, und beschränkt ssh per `HostKeyAlgorithms ssh-ed25519`. Der Job
-  „Host-Schlüssel prüfen“ macht das auch in PRs, nur lesend. Neuer Server-Schlüssel → `PIN` ändern.
+  (`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`). `deploy/pin-host-key.sh` nimmt aus dem
+  Secret (CRLF wird entfernt) bzw. per `ssh-keyscan -t ed25519` nur die ed25519-Einträge für
+  `HOST` (Port 22: nackter Host, sonst `[HOST]:PORT`; Einträge anderer Hosts werden ignoriert),
+  verlangt, dass **jeder** davon dem Pin entspricht, und beschränkt ssh nur für `HOST` per
+  `HostKeyAlgorithms ssh-ed25519` / `StrictHostKeyChecking yes`. Der Job „Host-Schlüssel prüfen“
+  läuft nur in PRs, nur lesend, und scannt mit `SCAN_SERVER=1` immer auch den Server.
+  Neuer Server-Schlüssel → `PIN` und Secret ändern.
 - Rollback: NPM-Host 22 zurück auf `hza-web:80` (der alte Container und `/var/www/hza`
   bleiben bestehen), oder `dist/` aus dem vorherigen Artefakt zurückspielen.
 

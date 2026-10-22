@@ -62,28 +62,35 @@ jobs:
           path: dist
           retention-days: 7
 
+  # Nur in PRs, nur lesend: scannt den Server immer (auch mit gesetztem
+  # Secret) und prüft Secret und Server gegen den Pin, ohne Login. Auf main
+  # macht das der Schritt „SSH vorbereiten“. Fork-PRs bekommen keine Secrets.
   hostkey:
     name: Host-Schlüssel prüfen
-    # Nur lesend: ed25519-Schlüssel des Servers scannen und gegen den Pin
-    # prüfen, ohne Login. Fork-PRs bekommen keine Secrets, dort entfällt das.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Gepinnten Schlüssel abgleichen
+      - name: Secret und Server gegen den Pin prüfen
         env:
           KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
           HOST: ${{ secrets.HOST }}
           PORT: ${{ secrets.PORT }}
+          SCAN_SERVER: "1"
         run: bash deploy/pin-host-key.sh
 
   deploy:
     name: Ausliefern
-    needs: [verify, hostkey]
+    needs: verify
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: production
+    # Als env statt ${{ }} im Skript: Werte bleiben gequotet und an einer Stelle.
+    env:
+      HOST: ${{ secrets.HOST }}
+      PORT: ${{ secrets.PORT }}
+      USERNAME: ${{ secrets.USERNAME }}
     steps:
       - uses: actions/checkout@v4
 
@@ -99,31 +106,30 @@ jobs:
       - name: SSH vorbereiten
         env:
           KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-          HOST: ${{ secrets.HOST }}
-          PORT: ${{ secrets.PORT }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           bash deploy/pin-host-key.sh
 
       - name: Stack abgleichen
         run: |
           set -euo pipefail
-          ssh -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
+          ssh -p "$PORT" "$USERNAME@$HOST" \
             "bash -s -- ${GITHUB_SHA}" < deploy/sync-stack.sh
 
       - name: Ausliefern
         run: |
           set -euo pipefail
-          ssh -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
+          ssh -p "$PORT" "$USERNAME@$HOST" \
             "mkdir -p /opt/stacks/hizbulazam/releases/${GITHUB_SHA}"
           rsync -avz \
-            -e "ssh -p ${{ secrets.PORT }}" \
+            -e "ssh -p $PORT" \
             dist/ \
-            ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/opt/stacks/hizbulazam/releases/${GITHUB_SHA}/
-          ssh -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
+            "$USERNAME@$HOST:/opt/stacks/hizbulazam/releases/${GITHUB_SHA}/"
+          ssh -p "$PORT" "$USERNAME@$HOST" \
             "bash -s -- ${GITHUB_SHA}" < deploy/publish.sh
 
       - name: Smoke-Test
