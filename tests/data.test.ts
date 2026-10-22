@@ -69,6 +69,8 @@ describe('Dua-Daten', () => {
   });
 
   it('hält IDs und arabische Volltexte im Suchindex identisch zu den Tagesdateien', () => {
+    const expectedRows = days.flatMap(entry => entry.data.duas.map(dua => `${entry.meta.day}/${dua.id}`));
+    expect(search.map(doc => `${doc.day}/${doc.id}`).sort()).toEqual(expectedRows.sort());
     const byDay = new Map(days.map(entry => [
       entry.meta.day,
       new Map(entry.data.duas.map(dua => [String(dua.id), String(dua.arabic_text)])),

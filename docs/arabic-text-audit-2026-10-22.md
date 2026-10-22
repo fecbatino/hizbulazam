@@ -38,7 +38,9 @@ bestätigt. Dies ist keine vollständige philologische Kollation jeder Überlief
 
 `tests/data.test.ts` prüft künftig jeden Buchstaben im gesamten arabischen Text,
 verbietet fremde Schriften, Steuer- und Ersatzzeichen und verlangt zeichengetreue
-Übereinstimmung der arabischen Suchtexte mit den Tagesdateien. Die bestehenden
+Übereinstimmung der arabischen Suchtexte mit den Tagesdateien. Jedes Bittgebet
+muss genau einmal im Suchindex erscheinen; doppelte Einträge dürfen keine
+fehlenden Einträge verdecken. Die bestehenden
 Buildprüfungen sichern außerdem die identische Übernahme in die versionierten
 Offline-Dateien ab. Ein erneuter Test mit den ursprünglichen defekten Daten
 muss die beiden lateinischen Buchstaben melden.
