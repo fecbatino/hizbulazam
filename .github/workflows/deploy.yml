@@ -41,6 +41,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Veröffentlichung und Bereinigung prüfen
+        run: bash deploy/test-publish.sh
+
       - name: Browser installieren
         run: npx playwright install --with-deps chromium
 
@@ -103,11 +106,15 @@ jobs:
       - name: Smoke-Test
         run: |
           set -euo pipefail
-          for path in / /manifest.webmanifest /data/collections.json; do
+          content="/assets/content/$(ls dist/assets/content)"
+          for path in / /manifest.webmanifest "$content/collections.json"; do
             code=$(curl -fsS -o /dev/null -w '%{http_code}' "https://hza.fechal-batakpale.com${path}?v=${GITHUB_SHA::7}")
             echo "${path} -> ${code}"
             [ "$code" = "200" ] || exit 1
           done
           deployed=$(curl -fsS "https://hza.fechal-batakpale.com/deployed-sha.txt?v=${GITHUB_SHA}")
           [ "$deployed" = "$GITHUB_SHA" ] || exit 1
+          curl -fsSI "https://hza.fechal-batakpale.com/?v=${GITHUB_SHA::7}" |
+            grep -qi '^content-security-policy:' ||
+            { echo "Security-Header fehlen"; exit 1; }
           echo "Smoke-Test bestanden"

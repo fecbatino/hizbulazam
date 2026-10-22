@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { dataUrl } from "../lib/dataUrl";
-import { DayOfWeek, DuaCollection, Language } from "../types";
+import { DayOfWeek, DuaCollection, NameLanguage } from "../types";
 
 export interface CollectionMeta {
   day: DayOfWeek;
   order: number;
-  name: Record<Language, string>;
+  name: Record<NameLanguage, string>;
   hizbTitle?: string;
   count: number;
   ids: string[];
@@ -18,6 +18,11 @@ async function getJson<T>(file: string): Promise<T> {
   const res = await fetch(dataUrl(file), { credentials: "same-origin" });
   if (!res.ok) throw new Error(`${file}: HTTP ${res.status}`);
   return (await res.json()) as T;
+}
+
+/** Bereits geladene Sammlung eines Tages, ohne Anfrage. */
+export function peekDay(day: string): DuaCollection | undefined {
+  return dayCache.get(day);
 }
 
 /** Lädt die Sammlung eines Tages. Ergebnisse werden im Modul-Cache gehalten. */

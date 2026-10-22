@@ -30,15 +30,6 @@ const BADGE: Record<Language, Record<SourceType, string>> = {
     later_supplication: "Supplication Tardive",
     unknown: "Inconnu",
   },
-  ar: {
-    quran: "قرآن",
-    sahih_hadith: "حديث صحيح",
-    hasan_hadith: "حديث حسن",
-    weak_hadith: "حديث ضعيف",
-    ikhtilaf: "اختلاف",
-    later_supplication: "دعاء متأخر",
-    unknown: "غير معروف",
-  },
 };
 interface Props {
   collection: DuaCollection;
@@ -50,6 +41,11 @@ interface Props {
   showShare: boolean;
   translationFontSize: number;
   showProgress?: boolean;
+  /** Position of each dua within its full day, when only a subset is shown. */
+  numbering?: Map<string, number>;
+  total?: number;
+  /** Shows a button that opens the dua at its place in the day. */
+  onOpen?: (id: string) => void;
 }
 function Entry({
   dua,
@@ -63,7 +59,8 @@ function Entry({
   showShare,
   translationFontSize,
   showProgress,
-}: Omit<Props, "collection" | "favorites"> & {
+  onOpen,
+}: Omit<Props, "collection" | "favorites" | "numbering" | "total"> & {
   dua: DuaItem;
   index: number;
   total: number;
@@ -76,9 +73,7 @@ function Entry({
       ? dua.translation_de
       : language === "fr"
         ? dua.translation_fr
-        : language === "ar"
-          ? ""
-          : dua.translation_en;
+        : dua.translation_en;
   const context =
     language === "de"
       ? dua.source_context_de
@@ -140,6 +135,15 @@ function Entry({
               <Icon name="share" />
             </button>
           )}
+          {onOpen && (
+            <button
+              className="icon-button"
+              onClick={() => onOpen(dua.id)}
+              aria-label={t.openInDay}
+            >
+              <Icon name="right" />
+            </button>
+          )}
         </div>
       </header>
       <p className="arabic-text" lang="ar" dir="rtl">
@@ -170,6 +174,8 @@ export const DuaCard = React.memo<Props>(function DuaCard({
   collection,
   favorites,
   showProgress = true,
+  numbering,
+  total,
   ...props
 }) {
   return (
@@ -178,8 +184,8 @@ export const DuaCard = React.memo<Props>(function DuaCard({
         <Entry
           key={dua.id}
           dua={dua}
-          index={index}
-          total={collection.duas.length}
+          index={numbering?.get(dua.id) ?? index}
+          total={total ?? collection.duas.length}
           favorite={favorites.has(dua.id)}
           showProgress={showProgress}
           {...props}

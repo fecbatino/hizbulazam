@@ -10,7 +10,7 @@ Keine Accounts, kein Backend, keine Nutzerdaten.
 
 - Stack: React 19 · Vite 6 · TypeScript strict · Tailwind 4 (Build) · `vite-plugin-pwa`
 - Repo: `fecbatino/hizbulazam` (public), Default-Branch `main`
-- Lokaler Checkout (Windows): `Documents/Dev/hizbulazam`
+- Lokaler Checkout (Windows): `Documents/ChatGPT/Dev/hza-analysis`
 - Produktion: https://hza.fechal-batakpale.com
 
 ## Architektur in Kurzform
@@ -42,7 +42,8 @@ npm run dev           # Vite Dev-Server, Port 3000
 npm run build         # Produktionsbuild -> dist/
 npm run typecheck     # tsc --noEmit
 npm run lint          # eslint
-npm run test          # Vitest (22 Tests)
+npm run test          # Vitest (Unit- und Inhaltstests)
+npm run test:e2e      # Playwright gegen dist/ (vorher build)
 npm run preview       # dist/ lokal ansehen
 ```
 
@@ -57,15 +58,26 @@ Push auf main ──► GitHub Actions
       deploy/sync-stack.sh → Server-Checkout per Fast-Forward auf <commit>,
          nginx -t in Wegwerf-Container, compose up --wait, nginx reload
       Artefakt → /opt/stacks/hizbulazam/releases/<commit>/
-      deploy/publish.sh → /var/www/hza (Assets zuerst, Einstiegspunkte atomar)
-   Smoke-Test: / · /manifest.webmanifest · /data/collections.json == 200
+      deploy/publish.sh → /var/www/hza (Assets zuerst, Einstiegspunkte atomar),
+         danach Bereinigung: letzte 5 Releases behalten; Dateien unter assets/ nur löschen,
+         wenn kein behaltenes Release sie enthält UND sie älter als 30 Tage sind.
+         Steuerung: HZA_KEEP_RELEASES (≥2), HZA_ASSET_MAX_AGE_DAYS (≥7),
+         HZA_RETENTION_DRY_RUN=1 (nur anzeigen). Geprüft in CI per deploy/test-publish.sh.
+   Smoke-Test: / · /manifest.webmanifest · /assets/content/<version>/collections.json == 200,
+               deployed-sha.txt == Commit, Content-Security-Policy vorhanden
 ```
 
-- Der Container `hizbulazam` (nginx:1.27-alpine) hängt im externen Netz `web-network`,
-  hat **keinen Host-Port**; nginx-proxy-manager (Host 22) zeigt auf `hizbulazam:80`.
-- `deploy/nginx/default.conf`: `/assets/*` und `/fonts/*` immutable, `/data/*` 5 Minuten,
-  `index.html`/`sw.js`/Manifest `no-cache`, SPA-Fallback. Das Verzeichnis `deploy/nginx/`
-  wird eingebunden (kein Einzeldatei-Mount), damit Git-Updates im Container ankommen.
+- Der Container `hizbulazam` (nginx 1.30.6-alpine, per Digest gepinnt) hängt im externen
+  Netz `web-network`, hat **keinen Host-Port**; nginx-proxy-manager (Host 22) zeigt auf
+  `hizbulazam:80`. Gehärtet: `read_only`, tmpfs für Cache/PID/Temp, `no-new-privileges`,
+  `cap_drop: ALL` plus CHOWN/SETUID/SETGID/NET_BIND_SERVICE.
+- `deploy/nginx/default.conf`: `/assets/*` immutable, `index.html`/`sw.js`/Manifest
+  `no-cache`, SPA-Fallback. `/data/*` und `/fonts/*` nur noch für ältere geöffnete Versionen;
+  der Build liefert sie nicht mehr aus. Das Verzeichnis `deploy/nginx/` wird eingebunden
+  (kein Einzeldatei-Mount), damit Git-Updates im Container ankommen.
+- `deploy/nginx/security-headers.inc`: CSP (nur `'self'`), nosniff, Referrer-, Permissions-
+  und Opener-Policy. Jede `location` mit eigenem `add_header` muss die Datei einbinden.
+  HSTS setzt der TLS-Endpunkt.
 - Webroot ist `/var/www/hza` (Default in `docker-compose.yml`); eine `.env` im Stack ist
   optional. Lokal: `HZA_ROOT=./dist docker compose up`.
 - Compose-/nginx-Änderungen kommen per CI an. Der Server-Checkout darf keine lokalen
@@ -102,8 +114,8 @@ Branch-Namen: `claude/<thema>-<YYYYMMDD>` bzw. `codex/<thema>-<YYYYMMDD>`.
 
 | Punkt | Datei | Status |
 |---|---|---|
-| UI-Strings teils englisch, teils deutsch | `App.tsx`, `components/*` | offen |
-| `metadata.json` ohne Funktion | Root | offen |
+| Arabische UI-Sprache entfernt (kein `source_context_ar`, kein RTL-Layout); gespeichertes `ar` fällt auf Deutsch zurück. Wiederaufnahme erst mit geprüften arabischen Quellenkontexten | `types.ts` (`Language` vs. `NameLanguage`) | entschieden |
+| Bereinigung alter Releases/Assets auf dem Server | `deploy/publish.sh`, Test `deploy/test-publish.sh` | umgesetzt, freigegeben am 22.10.2026 |
 | Tageswechsel/Scrollen | `e2e/reading.spec.ts` | Regressionstests; Tageswechsel nur ausdrücklich |
 
 ## Arbeitsweise
