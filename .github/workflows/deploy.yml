@@ -11,6 +11,9 @@ concurrency:
   group: hza-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     name: Prüfen
@@ -66,12 +69,24 @@ jobs:
           name: dist
           path: dist
 
+      # Host-Schlüssel kommt aus dem Secret statt aus ssh-keyscan: ein Scan zur
+      # Laufzeit würde jedem Server vertrauen, der unter HOST antwortet.
       - name: SSH vorbereiten
+        env:
+          KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
         run: |
+          set -euo pipefail
+          [ -n "$KNOWN_HOSTS" ] || { echo "Secret SSH_KNOWN_HOSTS fehlt"; exit 1; }
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p ${{ secrets.PORT }} -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Stack abgleichen
+        run: |
+          set -euo pipefail
+          ssh -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
+            "bash -s -- ${GITHUB_SHA}" < deploy/sync-stack.sh
 
       - name: Ausliefern
         run: |

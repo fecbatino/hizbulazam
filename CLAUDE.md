@@ -54,6 +54,8 @@ Vor jedem Commit müssen `typecheck`, `lint`, `test` und `build` grün sein.
 Push auf main ──► GitHub Actions
    Job "Prüfen":  npm ci → typecheck → lint → test → build
    Job "Ausliefern" (environment: production, needs: verify)
+      deploy/sync-stack.sh → Server-Checkout per Fast-Forward auf <commit>,
+         nginx -t in Wegwerf-Container, compose up --wait, nginx reload
       Artefakt → /opt/stacks/hizbulazam/releases/<commit>/
       deploy/publish.sh → /var/www/hza (Assets zuerst, Einstiegspunkte atomar)
    Smoke-Test: / · /manifest.webmanifest · /data/collections.json == 200
@@ -61,8 +63,16 @@ Push auf main ──► GitHub Actions
 
 - Der Container `hizbulazam` (nginx:1.27-alpine) hängt im externen Netz `web-network`,
   hat **keinen Host-Port**; nginx-proxy-manager (Host 22) zeigt auf `hizbulazam:80`.
-- `deploy/nginx.conf`: `/assets/*` und `/fonts/*` immutable, `/data/*` 5 Minuten,
-  `index.html`/`sw.js`/Manifest `no-cache`, SPA-Fallback.
+- `deploy/nginx/default.conf`: `/assets/*` und `/fonts/*` immutable, `/data/*` 5 Minuten,
+  `index.html`/`sw.js`/Manifest `no-cache`, SPA-Fallback. Das Verzeichnis `deploy/nginx/`
+  wird eingebunden (kein Einzeldatei-Mount), damit Git-Updates im Container ankommen.
+- Webroot ist `/var/www/hza` (Default in `docker-compose.yml`); eine `.env` im Stack ist
+  optional. Lokal: `HZA_ROOT=./dist docker compose up`.
+- Compose-/nginx-Änderungen kommen per CI an. Der Server-Checkout darf keine lokalen
+  Änderungen an versionierten Dateien haben, sonst bricht der Fast-Forward ab.
+- Secrets: `SSH_KEY`, `SSH_KNOWN_HOSTS` (Ausgabe von `ssh-keyscan -p <PORT> <HOST>`,
+  Fingerprint vorher prüfen), `HOST`, `PORT`, `USERNAME`. Der Deploy-User braucht
+  Docker-Rechte und Schreibrechte auf `/opt/stacks/hizbulazam`.
 - Rollback: NPM-Host 22 zurück auf `hza-web:80` (der alte Container und `/var/www/hza`
   bleiben bestehen), oder `dist/` aus dem vorherigen Artefakt zurückspielen.
 
@@ -82,7 +92,7 @@ Branch-Namen: `claude/<thema>-<YYYYMMDD>` bzw. `codex/<thema>-<YYYYMMDD>`.
 
 - Keine externen CDNs oder Fremd-Origins im Produktionsbuild. Prüfen mit:
   `grep -E 'https?://' dist/index.html` (muss leer sein).
-- Keine Secrets im Repo. `.env` existiert nicht und wird nicht angelegt.
+- Keine Secrets im Repo. Im Repo gibt es keine `.env` (nur optional im Server-Stack, ignoriert).
 - Neue Dependencies nur mit Begründung im Commit.
 - Bundle-Größe ist ein Feature: `dist/assets/index-*.js` bleibt unter 40 kB (aktuell ~26 kB);
   Daten gehören nach `public/data/`, nicht ins Bundle.
