@@ -15,7 +15,7 @@
 | Länder | Deutschland, Österreich, Schweiz (später erweiterbar) |
 | Zielgruppe | 13+ |
 | Telefon-Screenshots | `docs/play-store/screenshots/01…06` (1080×1920) |
-| Feature-Grafik | fehlt noch — 1024×500 PNG/JPEG, separat zu erstellen |
+| Feature-Grafik | `docs/play-store/feature-graphic-1024x500.png` (1024×500) |
 | App-Icon | 512×512 PNG, liegt als `public/icon-512.png` vor |
 
 ## Was noch von Hand entsteht
