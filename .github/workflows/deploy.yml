@@ -77,13 +77,22 @@ jobs:
       - name: SSH vorbereiten
         env:
           KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          PIN: SHA256:XE0PbpKgL0tZ1Hh24ZuUd9DYJk4WZTH9e3fC4cKA9cw
         run: |
           set -euo pipefail
-          [ -n "$KNOWN_HOSTS" ] || { echo "Secret SSH_KNOWN_HOSTS fehlt"; exit 1; }
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          if [ -n "${KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            # Kein Secret gepflegt: einmalig scannen, aber den Schluessel gegen
+            # den im Workflow gepinnten Fingerprint pruefen (kein Blindvertrauen).
+            ssh-keyscan -p "${{ secrets.PORT }}" "${{ secrets.HOST }}" > ~/.ssh/known_hosts 2>/dev/null
+            echo "Hinweis: Secret SSH_KNOWN_HOSTS fehlt, Host-Schluessel per Fingerprint geprueft"
+          fi
+          ssh-keygen -lf ~/.ssh/known_hosts | grep -qF "$PIN" \
+            || { echo "Host-Schluessel passt nicht zum gepinnten Fingerprint"; exit 1; }
 
       - name: Stack abgleichen
         run: |
