@@ -37,6 +37,9 @@ const en = {
   progress: "Dua",
   of: "of",
   beginning: "Start of day",
+  openInDay: "Show in its day",
+  theme: "Appearance",
+  system: "Match system",
 };
 export const UI: Record<Language, typeof en> = {
   en,
@@ -81,6 +84,9 @@ export const UI: Record<Language, typeof en> = {
     progress: "Dua",
     of: "von",
     beginning: "Tagesanfang",
+    openInDay: "Im Tag anzeigen",
+    theme: "Darstellung",
+    system: "Wie System",
   },
   fr: {
     search: "Recherche",
@@ -124,6 +130,9 @@ export const UI: Record<Language, typeof en> = {
     progress: "Dua",
     of: "sur",
     beginning: "Début du jour",
+    openInDay: "Afficher dans son jour",
+    theme: "Apparence",
+    system: "Comme le système",
   },
   ar: {
     search: "بحث",
@@ -162,5 +171,8 @@ export const UI: Record<Language, typeof en> = {
     progress: "دعاء",
     of: "من",
     beginning: "بداية اليوم",
+    openInDay: "عرض في يومه",
+    theme: "المظهر",
+    system: "حسب النظام",
   },
 };

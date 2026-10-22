@@ -20,6 +20,11 @@ async function getJson<T>(file: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+/** Bereits geladene Sammlung eines Tages, ohne Anfrage. */
+export function peekDay(day: string): DuaCollection | undefined {
+  return dayCache.get(day);
+}
+
 /** Lädt die Sammlung eines Tages. Ergebnisse werden im Modul-Cache gehalten. */
 export function loadDay(day: string): Promise<DuaCollection> {
   const cached = dayCache.get(day);

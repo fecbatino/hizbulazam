@@ -10,7 +10,7 @@ Keine Accounts, kein Backend, keine Nutzerdaten.
 
 - Stack: React 19 · Vite 6 · TypeScript strict · Tailwind 4 (Build) · `vite-plugin-pwa`
 - Repo: `fecbatino/hizbulazam` (public), Default-Branch `main`
-- Lokaler Checkout (Windows): `Documents/Dev/hizbulazam`
+- Lokaler Checkout (Windows): `Documents/ChatGPT/Dev/hza-analysis`
 - Produktion: https://hza.fechal-batakpale.com
 
 ## Architektur in Kurzform
@@ -42,7 +42,8 @@ npm run dev           # Vite Dev-Server, Port 3000
 npm run build         # Produktionsbuild -> dist/
 npm run typecheck     # tsc --noEmit
 npm run lint          # eslint
-npm run test          # Vitest (22 Tests)
+npm run test          # Vitest (Unit- und Inhaltstests)
+npm run test:e2e      # Playwright gegen dist/ (vorher build)
 npm run preview       # dist/ lokal ansehen
 ```
 
@@ -109,8 +110,8 @@ Branch-Namen: `claude/<thema>-<YYYYMMDD>` bzw. `codex/<thema>-<YYYYMMDD>`.
 
 | Punkt | Datei | Status |
 |---|---|---|
-| UI-Strings teils englisch, teils deutsch | `App.tsx`, `components/*` | offen |
-| `metadata.json` ohne Funktion | Root | offen |
+| Arabische Oberfläche: nur wählbar, wenn schon gespeichert; Layout bleibt LTR; Quellenkontext fällt auf Englisch zurück (kein `source_context_ar`) | `LanguageSelector.tsx`, `App.tsx`, `DuaCard.tsx` | offen, Produktentscheidung |
+| Bereinigung alter Releases/Assets auf dem Server | `deploy/publish.sh` | offen, braucht Freigabe (löscht in Produktion) |
 | Tageswechsel/Scrollen | `e2e/reading.spec.ts` | Regressionstests; Tageswechsel nur ausdrücklich |
 
 ## Arbeitsweise

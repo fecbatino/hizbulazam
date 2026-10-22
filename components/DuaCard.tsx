@@ -50,6 +50,11 @@ interface Props {
   showShare: boolean;
   translationFontSize: number;
   showProgress?: boolean;
+  /** Position of each dua within its full day, when only a subset is shown. */
+  numbering?: Map<string, number>;
+  total?: number;
+  /** Shows a button that opens the dua at its place in the day. */
+  onOpen?: (id: string) => void;
 }
 function Entry({
   dua,
@@ -63,7 +68,8 @@ function Entry({
   showShare,
   translationFontSize,
   showProgress,
-}: Omit<Props, "collection" | "favorites"> & {
+  onOpen,
+}: Omit<Props, "collection" | "favorites" | "numbering" | "total"> & {
   dua: DuaItem;
   index: number;
   total: number;
@@ -140,6 +146,15 @@ function Entry({
               <Icon name="share" />
             </button>
           )}
+          {onOpen && (
+            <button
+              className="icon-button"
+              onClick={() => onOpen(dua.id)}
+              aria-label={t.openInDay}
+            >
+              <Icon name="right" />
+            </button>
+          )}
         </div>
       </header>
       <p className="arabic-text" lang="ar" dir="rtl">
@@ -154,7 +169,8 @@ function Entry({
           {translation}
         </p>
       )}
-      <p className="dua-source">
+      {/* There is no Arabic source context; the English one stands in. */}
+      <p className="dua-source" lang={language === "ar" ? "en" : undefined}>
         {reference ? reference + " · " : ""}
         {context}
       </p>
@@ -170,6 +186,8 @@ export const DuaCard = React.memo<Props>(function DuaCard({
   collection,
   favorites,
   showProgress = true,
+  numbering,
+  total,
   ...props
 }) {
   return (
@@ -178,8 +196,8 @@ export const DuaCard = React.memo<Props>(function DuaCard({
         <Entry
           key={dua.id}
           dua={dua}
-          index={index}
-          total={collection.duas.length}
+          index={numbering?.get(dua.id) ?? index}
+          total={total ?? collection.duas.length}
           favorite={favorites.has(dua.id)}
           showProgress={showProgress}
           {...props}

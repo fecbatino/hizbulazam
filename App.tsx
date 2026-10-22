@@ -5,18 +5,19 @@ import { DuaCard } from "./components/DuaCard";
 import { LanguageSelector } from "./components/LanguageSelector";
 import { Icon } from "./components/icons";
 import { UpdateNotice } from "./components/UpdateNotice";
-import type { AppSettings } from "./components/SettingsModal";
+import type { AppSettings, Theme } from "./components/SettingsModal";
 import { DATE_DAY_TO_ORDER_INDEX, DAYS_ORDER } from "./constants";
 import {
   findDayByDuaId,
   loadAllDays,
   loadDay,
+  peekDay,
   useCollectionsMeta,
 } from "./hooks/useCollections";
 import { setDayHash, setDuaHash, useDeepLink } from "./hooks/useDeepLink";
 import { Jump, useReadingPosition } from "./hooks/useReadingPosition";
 import { UI } from "./lib/ui";
-import { DuaCollection, DuaItem, Language } from "./types";
+import { DuaCollection, Language } from "./types";
 
 const DaySelectorModal = React.lazy(() =>
   import("./components/DaySelectorModal").then((m) => ({
@@ -72,7 +73,7 @@ function App() {
   const [collection, setCollection] = useState<DuaCollection | null>(null);
   const [collectionError, setCollectionError] = useState(false);
   const [retry, setRetry] = useState(0);
-  const [allDuas, setAllDuas] = useState<DuaItem[] | null>(null);
+  const [allDays, setAllDays] = useState<DuaCollection[] | null>(null);
   const [favoritesError, setFavoritesError] = useState(false);
   const [favoritesRetry, setFavoritesRetry] = useState(0);
   const [pendingDua, setPendingDua] = useState<string | null>(null);
@@ -92,26 +93,32 @@ function App() {
     );
   });
   const [settings, setSettings] = useState(initialSettings);
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
+  const [theme, setTheme] = useState<Theme>(() => {
     const value = read<string>(THEME_STORAGE_KEY, "");
     // Older releases stored the theme as a raw string, rather than JSON.
     let legacy = "";
     try {
       legacy = localStorage.getItem(THEME_STORAGE_KEY) || "";
     } catch {}
-    if (value === "dark" || legacy === "dark") return "dark";
-    if (value === "light" || legacy === "light") return "light";
-    return window.matchMedia?.("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
+    for (const option of ["dark", "light", "system"] as const)
+      if (value === option || legacy === option) return option;
+    return "system";
   });
+  const [systemDark, setSystemDark] = useState(
+    () => !!window.matchMedia?.("(prefers-color-scheme: dark)").matches,
+  );
+  const resolvedTheme =
+    theme === "system" ? (systemDark ? "dark" : "light") : theme;
   const [activeView, setActiveView] = useState<"duas" | "favorites">("duas");
   const [isDaySelectorOpen, setIsDaySelectorOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const paused = isDaySelectorOpen || isSettingsOpen || isSearchOpen;
   const day = meta?.[currentDayIndex]?.day;
-  const ready = !!collection && collection.day === day;
+  // A day loaded before renders at once, without a loading frame in between.
+  const shown =
+    collection?.day === day ? collection : day ? (peekDay(day) ?? null) : null;
+  const ready = !!shown;
   const { currentDua, savePosition } = useReadingPosition(
     day,
     ready,
@@ -120,9 +127,17 @@ function App() {
     jump,
   );
   const t = UI[language];
-  const favDuas = useMemo(
-    () => (allDuas ?? []).filter((dua) => favorites.has(dua.id)),
-    [allDuas, favorites],
+  const favoriteDays = useMemo(
+    () =>
+      (allDays ?? [])
+        .map((entry) => ({
+          ...entry,
+          duas: entry.duas.filter((dua) => favorites.has(dua.id)),
+          numbering: new Map(entry.duas.map((dua, i) => [dua.id, i])),
+          total: entry.duas.length,
+        }))
+        .filter((entry) => entry.duas.length),
+    [allDays, favorites],
   );
 
   useEffect(() => {
@@ -143,10 +158,22 @@ function App() {
     }
   }, [settings, language]);
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
+    const query = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!query) return;
+    const change = () => setSystemDark(query.matches);
+    query.addEventListener("change", change);
+    return () => query.removeEventListener("change", change);
+  }, []);
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", theme === "dark" ? "#141E19" : "#1B4332");
+      ?.setAttribute(
+        "content",
+        resolvedTheme === "dark" ? "#141E19" : "#1B4332",
+      );
+  }, [resolvedTheme]);
+  useEffect(() => {
     try {
       localStorage.setItem(THEME_STORAGE_KEY, theme);
     } catch {
@@ -175,7 +202,6 @@ function App() {
   useEffect(() => {
     if (!day || !linkResolved) return;
     let alive = true;
-    setCollection(null);
     setCollectionError(false);
     loadDay(day)
       .then((next) => {
@@ -216,12 +242,12 @@ function App() {
     if (day && linkResolved && !pendingDua) setDayHash(day);
   }, [day, linkResolved, pendingDua]);
   useEffect(() => {
-    if (activeView !== "favorites" || allDuas || !meta) return;
+    if (activeView !== "favorites" || allDays || !meta) return;
     let alive = true;
     setFavoritesError(false);
     loadAllDays(meta)
       .then((days) => {
-        if (alive) setAllDuas(days.flatMap((item) => item.duas));
+        if (alive) setAllDays(days);
       })
       .catch(() => {
         if (alive) setFavoritesError(true);
@@ -229,7 +255,7 @@ function App() {
     return () => {
       alive = false;
     };
-  }, [activeView, allDuas, meta, favoritesRetry]);
+  }, [activeView, allDays, meta, favoritesRetry]);
 
   const changeSettings = useCallback(
     (value: Partial<AppSettings>) =>
@@ -275,7 +301,7 @@ function App() {
   };
   const restart = () => {
     savePosition();
-    const id = collection?.duas[0]?.id;
+    const id = shown?.duas[0]?.id;
     if (id)
       setJump((previous) => ({ id, sequence: (previous?.sequence ?? 0) + 1 }));
     setPendingDua(null);
@@ -344,11 +370,11 @@ function App() {
           <button
             className="icon-button"
             onClick={() =>
-              setTheme((previous) => (previous === "light" ? "dark" : "light"))
+              setTheme(resolvedTheme === "light" ? "dark" : "light")
             }
-            aria-label={theme === "light" ? t.dark : t.light}
+            aria-label={resolvedTheme === "light" ? t.dark : t.light}
           >
-            <Icon name={theme === "light" ? "moon" : "sun"} />
+            <Icon name={resolvedTheme === "light" ? "moon" : "sun"} />
           </button>
           <LanguageSelector
             currentLanguage={language}
@@ -392,8 +418,8 @@ function App() {
             retryButton(retryMeta)
           ) : collectionError ? (
             retryButton(() => setRetry((n) => n + 1))
-          ) : ready && collection ? (
-            <DuaCard collection={collection} {...cardProps} />
+          ) : shown ? (
+            <DuaCard collection={shown} {...cardProps} />
           ) : (
             <p className="empty-state" role="status">
               {t.loading}
@@ -404,23 +430,31 @@ function App() {
             <h1 className="view-title">{t.favorites}</h1>
             {favoritesError ? (
               retryButton(() => setFavoritesRetry((n) => n + 1))
-            ) : !allDuas ? (
+            ) : !allDays ? (
               <p className="empty-state" role="status">
                 {t.loading}
               </p>
-            ) : !favDuas.length ? (
+            ) : !favoriteDays.length ? (
               <p className="empty-state">{t.emptyFavorites}</p>
             ) : (
-              <DuaCard
-                collection={{
-                  day: "friday",
-                  name: { de: "", en: "", fr: "", ar: "" },
-                  duas: favDuas,
-                }}
-                {...cardProps}
-                showFavorites
-                showProgress={false}
-              />
+              favoriteDays.map(({ numbering, total, ...entry }) => (
+                <section
+                  key={entry.day}
+                  aria-labelledby={"favorites-" + entry.day}
+                >
+                  <h2 className="favorites-day" id={"favorites-" + entry.day}>
+                    {entry.name[language]}
+                  </h2>
+                  <DuaCard
+                    collection={entry}
+                    {...cardProps}
+                    showFavorites
+                    numbering={numbering}
+                    total={total}
+                    onOpen={(id) => searchSelect(entry.day, id)}
+                  />
+                </section>
+              ))
             )}
           </>
         )}
@@ -449,6 +483,8 @@ function App() {
             onClose={() => setIsSettingsOpen(false)}
             settings={settings}
             onSettingsChange={changeSettings}
+            theme={theme}
+            onThemeChange={setTheme}
             language={language}
           />
         )}
