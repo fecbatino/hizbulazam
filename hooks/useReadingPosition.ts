@@ -44,7 +44,9 @@ export function useReadingPosition(
       /* Reading also works without storage. */
     }
   }, [positions]);
-  const savePosition = useCallback(() => {
+  // Records the visible dua in memory; persisting is separate so scrolling
+  // does not write localStorage on every frame.
+  const capture = useCallback(() => {
     const state = context.current;
     if (
       !state.day ||
@@ -70,8 +72,11 @@ export function useReadingPosition(
       offset: card.getBoundingClientRect().top,
     };
     setCurrentDua(index + 1);
+  }, [positions]);
+  const savePosition = useCallback(() => {
+    capture();
     persist();
-  }, [persist, positions]);
+  }, [capture, persist]);
 
   useLayoutEffect(() => {
     context.current = { day, ready, active, paused };
@@ -129,24 +134,33 @@ export function useReadingPosition(
   }, [day, ready, active, paused, jump, positions]);
   useEffect(() => {
     let frame = 0;
+    let timer = 0;
     const scroll = () => {
       if (!frame)
         frame = requestAnimationFrame(() => {
           frame = 0;
-          savePosition();
+          capture();
         });
+      clearTimeout(timer);
+      timer = window.setTimeout(persist, 400);
+    };
+    const hidden = () => {
+      if (document.visibilityState === "hidden") persist();
     };
     const original = history.scrollRestoration;
     history.scrollRestoration = "manual";
     window.addEventListener("scroll", scroll, { passive: true });
     window.addEventListener("pagehide", persist);
+    document.addEventListener("visibilitychange", hidden);
     return () => {
       cancelAnimationFrame(frame);
+      clearTimeout(timer);
       window.removeEventListener("scroll", scroll);
       window.removeEventListener("pagehide", persist);
+      document.removeEventListener("visibilitychange", hidden);
       history.scrollRestoration = original;
       persist();
     };
-  }, [savePosition, persist]);
+  }, [capture, persist]);
   return { currentDua, savePosition };
 }

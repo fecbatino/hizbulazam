@@ -57,6 +57,14 @@ export default defineConfig({
       transformIndexHtml(html) {
         return html.replaceAll("/fonts/", "/" + prefix + "fonts/");
       },
+      closeBundle() {
+        // Vite copies public/ verbatim; the app only reads the versioned copies.
+        for (const dir of ["data", "fonts"])
+          fs.rmSync(path.join(root, "dist", dir), {
+            recursive: true,
+            force: true,
+          });
+      },
       generateBundle() {
         for (const item of resources)
           this.emitFile({

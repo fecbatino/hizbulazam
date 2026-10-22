@@ -58,14 +58,21 @@ Push auf main ──► GitHub Actions
          nginx -t in Wegwerf-Container, compose up --wait, nginx reload
       Artefakt → /opt/stacks/hizbulazam/releases/<commit>/
       deploy/publish.sh → /var/www/hza (Assets zuerst, Einstiegspunkte atomar)
-   Smoke-Test: / · /manifest.webmanifest · /data/collections.json == 200
+   Smoke-Test: / · /manifest.webmanifest · /assets/content/<version>/collections.json == 200,
+               deployed-sha.txt == Commit, Content-Security-Policy vorhanden
 ```
 
-- Der Container `hizbulazam` (nginx:1.27-alpine) hängt im externen Netz `web-network`,
-  hat **keinen Host-Port**; nginx-proxy-manager (Host 22) zeigt auf `hizbulazam:80`.
-- `deploy/nginx/default.conf`: `/assets/*` und `/fonts/*` immutable, `/data/*` 5 Minuten,
-  `index.html`/`sw.js`/Manifest `no-cache`, SPA-Fallback. Das Verzeichnis `deploy/nginx/`
-  wird eingebunden (kein Einzeldatei-Mount), damit Git-Updates im Container ankommen.
+- Der Container `hizbulazam` (nginx 1.30.6-alpine, per Digest gepinnt) hängt im externen
+  Netz `web-network`, hat **keinen Host-Port**; nginx-proxy-manager (Host 22) zeigt auf
+  `hizbulazam:80`. Gehärtet: `read_only`, tmpfs für Cache/PID/Temp, `no-new-privileges`,
+  `cap_drop: ALL` plus CHOWN/SETUID/SETGID/NET_BIND_SERVICE.
+- `deploy/nginx/default.conf`: `/assets/*` immutable, `index.html`/`sw.js`/Manifest
+  `no-cache`, SPA-Fallback. `/data/*` und `/fonts/*` nur noch für ältere geöffnete Versionen;
+  der Build liefert sie nicht mehr aus. Das Verzeichnis `deploy/nginx/` wird eingebunden
+  (kein Einzeldatei-Mount), damit Git-Updates im Container ankommen.
+- `deploy/nginx/security-headers.inc`: CSP (nur `'self'`), nosniff, Referrer-, Permissions-
+  und Opener-Policy. Jede `location` mit eigenem `add_header` muss die Datei einbinden.
+  HSTS setzt der TLS-Endpunkt.
 - Webroot ist `/var/www/hza` (Default in `docker-compose.yml`); eine `.env` im Stack ist
   optional. Lokal: `HZA_ROOT=./dist docker compose up`.
 - Compose-/nginx-Änderungen kommen per CI an. Der Server-Checkout darf keine lokalen
