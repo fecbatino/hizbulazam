@@ -60,6 +60,9 @@ jobs:
         with:
           name: dist
           path: dist
+          # Ohne dies verwirft upload-artifact alle Dot-Dateien - darunter
+          # dist/.well-known/assetlinks.json (Trusted Web Activity).
+          include-hidden-files: true
           retention-days: 7
 
   # Nur in PRs, nur lesend: scannt den Server immer (auch mit gesetztem
