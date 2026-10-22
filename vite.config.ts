@@ -59,6 +59,9 @@ export default defineConfig({
       },
       closeBundle() {
         // Vite copies public/ verbatim; the app only reads the versioned copies.
+        const links = path.join(root, "dist/.well-known/assetlinks.json");
+        fs.mkdirSync(path.dirname(links), { recursive: true });
+        fs.copyFileSync(path.join(root, "public/.well-known/assetlinks.json"), links);
         for (const dir of ["data", "fonts"])
           fs.rmSync(path.join(root, "dist", dir), {
             recursive: true,
@@ -66,15 +69,6 @@ export default defineConfig({
           });
       },
       generateBundle() {
-        // Vite ueberspringt Dot-Verzeichnisse in public/; die Digital Asset
-        // Links muessen aber unter /.well-known/ liegen.
-        this.emitFile({
-          type: "asset",
-          fileName: ".well-known/assetlinks.json",
-          source: fs.readFileSync(
-            path.join(root, "public/.well-known/assetlinks.json"),
-          ),
-        });
         for (const item of resources)
           this.emitFile({
             type: "asset",
