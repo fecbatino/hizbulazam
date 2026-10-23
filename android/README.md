@@ -4,7 +4,7 @@ Erzeugt die Play-Store-App für `https://hza.fechal-batakpale.com`.
 Die Web-App bleibt die Quelle der Wahrheit; dieses Modul ist nur die Hülle.
 
 - `applicationId`: `com.fechalbatakpale.hizbulazam`
-- `minSdk 21`, `targetSdk 36` (Pflicht für neue Apps seit 31.08.2026)
+- `minSdk 24`, `targetSdk 36` (Pflicht für neue Apps seit 31.08.2026)
 - Start-URL: `https://hza.fechal-batakpale.com/`
 - Verifikation: `https://hza.fechal-batakpale.com/.well-known/assetlinks.json`
 

@@ -16,10 +16,10 @@ android {
 
   defaultConfig {
     applicationId "com.fechalbatakpale.hizbulazam"
-    minSdk 21
+    minSdk 24
     targetSdk 36
-    versionCode vCode ? vCode.toInteger() : 1
-    versionName vName ? vName : "1.0.0"
+    versionCode vCode ? vCode.toInteger() : 2
+    versionName vName ? vName : "1.0.1"
   }
 
   signingConfigs {
