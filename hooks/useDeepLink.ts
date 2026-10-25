@@ -22,21 +22,28 @@ export function parseHash(hash: string): DeepLink {
   return null;
 }
 
-// Zuletzt empfangener Link (jedes hashchange erzeugt ein neues Objekt). React
-// kann einen Zwischenstand rendern, bevor dieses Update ankommt; solange der
-// gerenderte Link nicht dieser ist, gilt der gerenderte Tag als überholt.
-let latestLink: DeepLink = parseHash(window.location.hash);
+// Ein neuer Link kann in zwei Reihenfolgen mit dem Tages-Hash kollidieren:
+// - Die Adresse hat sich schon geändert, ihr hashchange steht aber noch aus:
+//   location.hash weicht dann vom zuletzt gesehenen Hash ab (seenHash).
+// - Der hashchange ist verarbeitet, React rendert aber noch einen älteren
+//   Stand: Der gerenderte Link ist dann nicht der zuletzt empfangene
+//   (latestLink; jedes hashchange erzeugt ein neues Objekt).
+// In beiden Fällen gilt der Tag des Aufrufers als überholt.
+let seenHash = window.location.hash;
+let latestLink: DeepLink = parseHash(seenHash);
 
 /** Liest den Hash beim Start und bei jeder Änderung (Zurück/Vor, geteilte Links). */
 export function useDeepLink(): DeepLink {
   const [link, setLink] = useState<DeepLink>(() => {
-    latestLink = parseHash(window.location.hash);
+    seenHash = window.location.hash;
+    latestLink = parseHash(seenHash);
     return latestLink;
   });
 
   useEffect(() => {
     const handler = () => {
-      latestLink = parseHash(window.location.hash);
+      seenHash = window.location.hash;
+      latestLink = parseHash(seenHash);
       setLink(latestLink);
     };
     window.addEventListener("hashchange", handler);
@@ -48,14 +55,15 @@ export function useDeepLink(): DeepLink {
 
 /**
  * Tageswechsel schreibt den Hash, ohne die History zu fluten. `renderedLink`
- * ist der Link, auf dem der aufrufende Render beruht: Ist inzwischen ein
- * neuerer angekommen, darf der Tag des alten ihn nicht überschreiben.
+ * ist der Link, auf dem der aufrufende Render beruht. Ein neuerer Link, ob
+ * schon empfangen oder noch unterwegs, darf nicht überschrieben werden.
  */
 export function setDayHash(day: string, renderedLink: DeepLink): void {
-  if (renderedLink !== latestLink) return;
+  if (renderedLink !== latestLink || window.location.hash !== seenHash) return;
   const next = `#/day/${encodeURIComponent(day)}`;
   if (window.location.hash !== next) {
     window.history.replaceState(null, "", next);
+    seenHash = next;
   }
 }
 

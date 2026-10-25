@@ -65,6 +65,17 @@ describe("schnelle Hash-Wechsel", () => {
     window.history.replaceState(null, "", "/");
   });
 
+  it("überschreibt keinen Link, dessen hashchange noch aussteht", async () => {
+    const { result } = renderHook(() => useDeepLink());
+    // The address changes; jsdom delivers hashchange later, as browsers do.
+    window.location.hash = "#/dua/ikhlas";
+    setDayHash("monday", result.current);
+    expect(window.location.hash).toBe("#/dua/ikhlas");
+    await waitFor(() =>
+      expect(result.current).toEqual({ kind: "dua", id: "ikhlas" }),
+    );
+  });
+
   it("überschreibt keinen neueren, noch nicht gerenderten Link", async () => {
     const { result } = renderHook(() => useDeepLink());
     const rendered = result.current;
