@@ -26,6 +26,24 @@ test("rapid hash changes keep the last link", async ({ page }) => {
   }
 });
 
+// The other order: the address already holds the new link, but its hashchange
+// has not been handled when the app writes the previous day.
+test("a link opened while the previous day is still rendering survives", async ({
+  page,
+}) => {
+  await page.goto("/#/day/friday");
+  await expect(page.locator("[data-dua-id]").first()).toBeVisible();
+  const id = (await page.locator("[data-dua-id]").nth(2).getAttribute("data-dua-id"))!;
+  for (let i = 0; i < 8; i++) {
+    await page.goto("/#/day/monday");
+    await page.goto("/#/dua/" + encodeURIComponent(id));
+    await expect(page).toHaveURL(new RegExp("#/dua/" + id + "$"));
+    await expect(page.locator(".day-title")).toContainText("Freitag");
+    await page.goto("/#/day/sunday");
+    await expect(page.locator(".day-title")).toContainText("Sonntag");
+  }
+});
+
 test("a day link right after a dua link wins as well", async ({ page }) => {
   await page.goto("/#/day/friday");
   await expect(page.locator("[data-dua-id]").first()).toBeVisible();
