@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { BottomNav, BottomTab } from "./components/BottomNav";
 import { DayNavigator } from "./components/DayNavigator";
 import { DuaCard } from "./components/DuaCard";
@@ -256,9 +262,20 @@ function App() {
     // Drop hidden ids that a data correction removed, so counts stay true.
     if (meta) setHidden((previous) => pruneHidden(previous, meta));
   }, [meta]);
+  // The day hash must never replace a link the reader opened after it:
+  // - in the commit where a new link arrives, the effect above has only
+  //   scheduled the day/dua it points to, so day and pendingDua still belong
+  //   to the previous link: wait for the commit that renders its state;
+  // - setDayHash also refuses while a newer link is received but not yet
+  //   rendered (React may commit an intermediate state first).
+  const writtenForLink = useRef<typeof deepLink | undefined>(undefined);
   useEffect(() => {
-    if (day && linkResolved && !pendingDua) setDayHash(day);
-  }, [day, linkResolved, pendingDua]);
+    if (writtenForLink.current !== deepLink) {
+      writtenForLink.current = deepLink;
+      return;
+    }
+    if (day && linkResolved && !pendingDua) setDayHash(day, deepLink);
+  }, [day, linkResolved, pendingDua, deepLink]);
   useEffect(() => {
     if (activeView !== "favorites" || allDays || !meta) return;
     let alive = true;

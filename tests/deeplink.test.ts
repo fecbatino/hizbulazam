@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { parseHash, setDayHash, setDuaHash } from "../hooks/useDeepLink";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import {
+  parseHash,
+  setDayHash,
+  setDuaHash,
+  useDeepLink,
+} from "../hooks/useDeepLink";
 
 describe("parseHash", () => {
   it("erkennt Tages- und Dua-Links", () => {
@@ -31,7 +37,7 @@ describe("Hash schreiben", () => {
 
   it("setzt Tageslinks ohne History-Eintrag", () => {
     const before = window.history.length;
-    setDayHash("monday");
+    setDayHash("monday", null);
     expect(window.location.hash).toBe("#/day/monday");
     expect(window.history.length).toBe(before);
   });
@@ -47,9 +53,33 @@ describe("Hash schreiben", () => {
   });
 
   it("schreibt nicht doppelt", () => {
-    setDayHash("tuesday");
+    setDayHash("tuesday", null);
     const first = window.location.href;
-    setDayHash("tuesday");
+    setDayHash("tuesday", null);
     expect(window.location.href).toBe(first);
+  });
+});
+
+describe("schnelle Hash-Wechsel", () => {
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("überschreibt keinen neueren, noch nicht gerenderten Link", async () => {
+    const { result } = renderHook(() => useDeepLink());
+    const rendered = result.current;
+    // The reader opens a dua link; its hashchange arrives, but the caller
+    // still renders the previous link.
+    act(() => {
+      window.location.hash = "#/dua/fatiha";
+    });
+    await waitFor(() =>
+      expect(result.current).toEqual({ kind: "dua", id: "fatiha" }),
+    );
+    setDayHash("monday", rendered);
+    expect(window.location.hash).toBe("#/dua/fatiha");
+    // With the current link the day hash is written as before.
+    setDayHash("monday", result.current);
+    expect(window.location.hash).toBe("#/day/monday");
   });
 });
