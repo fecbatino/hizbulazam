@@ -25,4 +25,4 @@
   arabischer Untertitel).
 - **Kurzbeschreibung final wählen** (drei Varianten in `store-listing.md`).
 - **Länderauswahl.** Start mit DACH; weitere Länder ohne Übersetzung möglich,
-  weil die App nur Deutsch und Französisch kennt.
+  weil App und Store-Eintrag Deutsch, Englisch und Französisch abdecken.

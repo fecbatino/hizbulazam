@@ -69,7 +69,7 @@ Upload-Zertifikat (SHA-256):
    ?source.web.site=https://hza.fechal-batakpale.com\
    &relation=delegate_permission/common.handle_all_urls"
    ```
-5. **Store-Eintrag.** Texte aus `store-listing.md`, Screenshots aus
+5. **Store-Eintrag.** Texte DE/EN/FR aus `console-cheatsheet.md` (massgeblich), Screenshots aus
    `screenshots/` (1080×1920), Data Safety aus `data-safety.md`,
    Alterseinstufung aus `content-rating.md`.
 6. **Geschlossener Test.** 12 Tester, 14 Tage durchgehend. Danach Produktions-
