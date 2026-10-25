@@ -1,6 +1,7 @@
-import { Language } from "../types";
+import { Language, SourceType } from "../types";
 import { useFocusTrap } from "../hooks/useFocusTrap";
-import { UI } from "../lib/ui";
+import { HiddenDuas, SOURCE_TYPES } from "../lib/hidden";
+import { SOURCE_LABEL, UI } from "../lib/ui";
 import { Icon } from "./icons";
 import { OfflineDownload } from "./OfflineDownload";
 export interface AppSettings {
@@ -18,6 +19,9 @@ interface Props {
   onSettingsChange: (settings: Partial<AppSettings>) => void;
   theme: Theme;
   onThemeChange: (theme: Theme) => void;
+  hidden: HiddenDuas;
+  onHiddenTypeChange: (type: SourceType, hide: boolean) => void;
+  onShowAll: () => void;
   language: Language;
 }
 const SETTINGS_T = {
@@ -53,6 +57,9 @@ export function SettingsModal({
   onSettingsChange,
   theme,
   onThemeChange,
+  hidden,
+  onHiddenTypeChange,
+  onShowAll,
   language,
 }: Props) {
   const ref = useFocusTrap<HTMLDivElement>(isOpen, onClose);
@@ -148,6 +155,35 @@ export function SettingsModal({
             }
           />
         </label>
+        <fieldset className="hidden-settings">
+          <legend>{ui.hiddenTitle}</legend>
+          <p>{ui.hiddenHint}</p>
+          <p className="hidden-subtitle">{ui.hideBySource}</p>
+          {/* "unknown" does not occur in the collection. */}
+          {SOURCE_TYPES.filter((type) => type !== "unknown").map((type) => (
+            <label className="setting-toggle" key={type}>
+              <span>{SOURCE_LABEL[language][type]}</span>
+              <input
+                type="checkbox"
+                checked={hidden.types.includes(type)}
+                onChange={(e) => onHiddenTypeChange(type, e.target.checked)}
+              />
+            </label>
+          ))}
+          <p className="hidden-count">
+            {ui.hiddenSingle.replace("{n}", String(hidden.ids.length))}
+          </p>
+          <button
+            className="primary-button"
+            onClick={onShowAll}
+            disabled={
+              !hidden.ids.length && !hidden.types.length && !hidden.shown.length
+            }
+          >
+            <Icon name="eye" />
+            {ui.showAll}
+          </button>
+        </fieldset>
         <OfflineDownload language={language} />
       </div>
     </div>

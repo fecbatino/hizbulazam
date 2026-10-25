@@ -1,4 +1,5 @@
 import React from "react";
+import { NOTHING_HIDDEN } from "../lib/hidden";
 import {
   act,
   cleanup,
@@ -37,6 +38,9 @@ it("open/close uses a consistent hook order and restores scroll and focus", () =
     onSettingsChange: vi.fn(),
     theme: "system" as const,
     onThemeChange: vi.fn(),
+    hidden: NOTHING_HIDDEN,
+    onHiddenTypeChange: vi.fn(),
+    onShowAll: vi.fn(),
     language: "de" as const,
     settings,
   };
@@ -79,6 +83,9 @@ it("Escape closes once and Tab cycles inside the dialog", () => {
       onSettingsChange={() => {}}
       theme="system"
       onThemeChange={() => {}}
+      hidden={NOTHING_HIDDEN}
+      onHiddenTypeChange={() => {}}
+      onShowAll={() => {}}
       language="de"
     />,
   );

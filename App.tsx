@@ -16,8 +16,18 @@ import {
 } from "./hooks/useCollections";
 import { setDayHash, setDuaHash, useDeepLink } from "./hooks/useDeepLink";
 import { Jump, useReadingPosition } from "./hooks/useReadingPosition";
+import {
+  HIDDEN_STORAGE_KEY,
+  HiddenDuas,
+  NOTHING_HIDDEN,
+  hideDua,
+  sanitizeHidden,
+  setTypeHidden,
+  showDua,
+} from "./lib/hidden";
+import { deviceLanguage } from "./lib/language";
 import { UI } from "./lib/ui";
-import { DuaCollection, Language } from "./types";
+import { DuaCollection, DuaItem, Language } from "./types";
 
 const DaySelectorModal = React.lazy(() =>
   import("./components/DaySelectorModal").then((m) => ({
@@ -84,16 +94,8 @@ function App() {
     const stored = read<Language | null>("hzaLanguage", null);
     // Older releases could store "ar"; only known values are accepted.
     if (stored && ["de", "en", "fr"].includes(stored)) return stored;
-    // Without a saved choice the device language decides. German stays the
-    // fallback because the collection was introduced in German.
-    const device = (
-      navigator.languages?.[0] ||
-      navigator.language ||
-      ""
-    ).toLowerCase();
-    if (device.startsWith("fr")) return "fr";
-    if (device.startsWith("en")) return "en";
-    return "de";
+    // Without a saved choice the device language or country decides.
+    return deviceLanguage();
   });
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     const values = read<unknown>(FAVORITES_STORAGE_KEY, []);
@@ -104,6 +106,9 @@ function App() {
     );
   });
   const [settings, setSettings] = useState(initialSettings);
+  const [hidden, setHidden] = useState<HiddenDuas>(() =>
+    sanitizeHidden(read<unknown>(HIDDEN_STORAGE_KEY, null)),
+  );
   const [theme, setTheme] = useState<Theme>(() => {
     const value = read<string>(THEME_STORAGE_KEY, "");
     // Older releases stored the theme as a raw string, rather than JSON.
@@ -169,6 +174,13 @@ function App() {
     }
   }, [settings, language]);
   useEffect(() => {
+    try {
+      localStorage.setItem(HIDDEN_STORAGE_KEY, JSON.stringify(hidden));
+    } catch {
+      setError(UI[language].error);
+    }
+  }, [hidden, language]);
+  useEffect(() => {
     const query = window.matchMedia?.("(prefers-color-scheme: dark)");
     if (!query) return;
     const change = () => setSystemDark(query.matches);
@@ -194,11 +206,6 @@ function App() {
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = "ltr";
-    try {
-      localStorage.setItem("hzaLanguage", JSON.stringify(language));
-    } catch {
-      /* Language still works without persistence. */
-    }
   }, [language]);
   useEffect(() => {
     const online = () => setIsOffline(false),
@@ -271,6 +278,14 @@ function App() {
   const changeSettings = useCallback(
     (value: Partial<AppSettings>) =>
       setSettings((previous) => ({ ...previous, ...value })),
+    [],
+  );
+  const hide = useCallback(
+    (id: string) => setHidden((previous) => hideDua(previous, id)),
+    [],
+  );
+  const show = useCallback(
+    (dua: DuaItem) => setHidden((previous) => showDua(previous, dua)),
     [],
   );
   const toggleFavorite = useCallback(
@@ -392,6 +407,13 @@ function App() {
             onLanguageChange={(next) => {
               savePosition();
               setLanguage(next);
+              // Only an explicit choice is stored; otherwise the app keeps
+              // following the device language.
+              try {
+                localStorage.setItem("hzaLanguage", JSON.stringify(next));
+              } catch {
+                /* Language still works without persistence. */
+              }
             }}
           />
         </div>
@@ -428,7 +450,13 @@ function App() {
           ) : collectionError ? (
             retryButton(() => setRetry((n) => n + 1))
           ) : shown ? (
-            <DuaCard collection={shown} {...cardProps} />
+            <DuaCard
+              collection={shown}
+              {...cardProps}
+              hidden={hidden}
+              onHide={hide}
+              onShow={show}
+            />
           ) : (
             <p className="empty-state" role="status">
               {t.loading}
@@ -494,6 +522,11 @@ function App() {
             onSettingsChange={changeSettings}
             theme={theme}
             onThemeChange={setTheme}
+            hidden={hidden}
+            onHiddenTypeChange={(type, on) =>
+              setHidden((previous) => setTypeHidden(previous, type, on))
+            }
+            onShowAll={() => setHidden(NOTHING_HIDDEN)}
             language={language}
           />
         )}

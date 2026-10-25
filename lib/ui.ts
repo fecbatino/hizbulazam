@@ -1,4 +1,4 @@
-import { Language } from "../types";
+import { Language, SourceType } from "../types";
 const en = {
   search: "Search",
   close: "Close",
@@ -40,6 +40,15 @@ const en = {
   openInDay: "Show in its day",
   theme: "Appearance",
   system: "Match system",
+  hide: "Hide this dua",
+  show: "Show",
+  hiddenLabel: "Hidden",
+  hiddenTitle: "Hidden duas",
+  hiddenHint:
+    "Hidden duas stay in the day as a slim line and can be shown again at any time.",
+  hideBySource: "Hide by source",
+  hiddenSingle: "Hidden individually: {n}",
+  showAll: "Show all again",
 };
 export const UI: Record<Language, typeof en> = {
   en,
@@ -87,6 +96,15 @@ export const UI: Record<Language, typeof en> = {
     openInDay: "Im Tag anzeigen",
     theme: "Darstellung",
     system: "Wie System",
+    hide: "Diese Dua ausblenden",
+    show: "Einblenden",
+    hiddenLabel: "Ausgeblendet",
+    hiddenTitle: "Ausgeblendete Duas",
+    hiddenHint:
+      "Ausgeblendete Duas bleiben als schmale Zeile im Tag stehen und lassen sich jederzeit wieder einblenden.",
+    hideBySource: "Nach Quelle ausblenden",
+    hiddenSingle: "Einzeln ausgeblendet: {n}",
+    showAll: "Alle wieder einblenden",
   },
   fr: {
     search: "Recherche",
@@ -133,5 +151,44 @@ export const UI: Record<Language, typeof en> = {
     openInDay: "Afficher dans son jour",
     theme: "Apparence",
     system: "Comme le système",
+    hide: "Masquer cette dua",
+    show: "Afficher",
+    hiddenLabel: "Masquée",
+    hiddenTitle: "Duas masquées",
+    hiddenHint:
+      "Les duas masquées restent dans le jour sous forme de ligne fine et peuvent être réaffichées à tout moment.",
+    hideBySource: "Masquer par source",
+    hiddenSingle: "Masquées individuellement : {n}",
+    showAll: "Tout réafficher",
+  },
+};
+/** Source-type labels for badges and settings. */
+export const SOURCE_LABEL: Record<Language, Record<SourceType, string>> = {
+  en: {
+    quran: "Quran",
+    sahih_hadith: "Sahih Hadith",
+    hasan_hadith: "Hasan Hadith",
+    weak_hadith: "Weak Hadith",
+    ikhtilaf: "Ikhtilaf",
+    later_supplication: "Later Supplication",
+    unknown: "Unknown",
+  },
+  de: {
+    quran: "Quran",
+    sahih_hadith: "Sahih Hadith",
+    hasan_hadith: "Hasan Hadith",
+    weak_hadith: "Schwaches Hadith",
+    ikhtilaf: "Ikhtilaf",
+    later_supplication: "Späteres Gebet",
+    unknown: "Unbekannt",
+  },
+  fr: {
+    quran: "Coran",
+    sahih_hadith: "Hadith Sahih",
+    hasan_hadith: "Hadith Hasan",
+    weak_hadith: "Hadith Faible",
+    ikhtilaf: "Ikhtilaf",
+    later_supplication: "Supplication Tardive",
+    unknown: "Inconnu",
   },
 };

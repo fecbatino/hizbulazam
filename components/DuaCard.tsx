@@ -1,36 +1,8 @@
 import React, { useState } from "react";
-import { DuaCollection, DuaItem, Language, SourceType } from "../types";
-import { UI } from "../lib/ui";
+import { DuaCollection, DuaItem, Language } from "../types";
+import { HiddenDuas, isHidden } from "../lib/hidden";
+import { SOURCE_LABEL, UI } from "../lib/ui";
 import { Icon } from "./icons";
-const BADGE: Record<Language, Record<SourceType, string>> = {
-  en: {
-    quran: "Quran",
-    sahih_hadith: "Sahih Hadith",
-    hasan_hadith: "Hasan Hadith",
-    weak_hadith: "Weak Hadith",
-    ikhtilaf: "Ikhtilaf",
-    later_supplication: "Later Supplication",
-    unknown: "Unknown",
-  },
-  de: {
-    quran: "Quran",
-    sahih_hadith: "Sahih Hadith",
-    hasan_hadith: "Hasan Hadith",
-    weak_hadith: "Schwaches Hadith",
-    ikhtilaf: "Ikhtilaf",
-    later_supplication: "Späteres Gebet",
-    unknown: "Unbekannt",
-  },
-  fr: {
-    quran: "Coran",
-    sahih_hadith: "Hadith Sahih",
-    hasan_hadith: "Hadith Hasan",
-    weak_hadith: "Hadith Faible",
-    ikhtilaf: "Ikhtilaf",
-    later_supplication: "Supplication Tardive",
-    unknown: "Inconnu",
-  },
-};
 interface Props {
   collection: DuaCollection;
   language: Language;
@@ -46,6 +18,10 @@ interface Props {
   total?: number;
   /** Shows a button that opens the dua at its place in the day. */
   onOpen?: (id: string) => void;
+  /** Hidden duas render as a slim line that can be shown again. */
+  hidden?: HiddenDuas;
+  onHide?: (id: string) => void;
+  onShow?: (dua: DuaItem) => void;
 }
 function Entry({
   dua,
@@ -60,14 +36,58 @@ function Entry({
   translationFontSize,
   showProgress,
   onOpen,
-}: Omit<Props, "collection" | "favorites" | "numbering" | "total"> & {
+  onHide,
+  onShow,
+  isDuaHidden,
+}: Omit<
+  Props,
+  "collection" | "favorites" | "numbering" | "total" | "hidden"
+> & {
   dua: DuaItem;
   index: number;
   total: number;
   favorite: boolean;
+  isDuaHidden: boolean;
 }) {
   const [status, setStatus] = useState("");
   const t = UI[language];
+  const number = showProgress && (
+    <span className="dua-number">
+      {t.progress} {index + 1} {t.of} {total}
+    </span>
+  );
+  const badge = (
+    <span className="source-badge">
+      {SOURCE_LABEL[language][dua.source_type]}
+    </span>
+  );
+  if (isDuaHidden)
+    // Stays in the list with its id, so position, numbering and deep links
+    // keep working; the content itself is not rendered.
+    return (
+      <article
+        id={"dua-" + dua.id}
+        data-dua-id={dua.id}
+        className="dua-card is-hidden"
+      >
+        <div className="dua-card-labels">
+          {number}
+          {badge}
+          {/* The dashed line shows it visually; screen readers get the word. */}
+          <span className="sr-only">{t.hiddenLabel}</span>
+        </div>
+        {onShow && (
+          <button
+            className="text-button"
+            onClick={() => onShow(dua)}
+            aria-label={`${t.show}: ${t.progress} ${index + 1}`}
+          >
+            <Icon name="eye" />
+            {t.show}
+          </button>
+        )}
+      </article>
+    );
   const translation =
     language === "de"
       ? dua.translation_de
@@ -106,14 +126,8 @@ function Entry({
     <article id={"dua-" + dua.id} data-dua-id={dua.id} className="dua-card">
       <header className="dua-card-header">
         <div className="dua-card-labels">
-          {showProgress && (
-            <span className="dua-number">
-              {t.progress} {index + 1} {t.of} {total}
-            </span>
-          )}
-          <span className="source-badge">
-            {BADGE[language][dua.source_type]}
-          </span>
+          {number}
+          {badge}
         </div>
         <div className="dua-actions">
           {showFavorites && (
@@ -142,6 +156,15 @@ function Entry({
               aria-label={t.openInDay}
             >
               <Icon name="right" />
+            </button>
+          )}
+          {onHide && (
+            <button
+              className="icon-button"
+              onClick={() => onHide(dua.id)}
+              aria-label={t.hide}
+            >
+              <Icon name="eyeOff" />
             </button>
           )}
         </div>
@@ -176,6 +199,7 @@ export const DuaCard = React.memo<Props>(function DuaCard({
   showProgress = true,
   numbering,
   total,
+  hidden,
   ...props
 }) {
   return (
@@ -188,6 +212,7 @@ export const DuaCard = React.memo<Props>(function DuaCard({
           total={total ?? collection.duas.length}
           favorite={favorites.has(dua.id)}
           showProgress={showProgress}
+          isDuaHidden={!!hidden && isHidden(hidden, dua)}
           {...props}
         />
       ))}
