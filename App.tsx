@@ -81,9 +81,19 @@ function App() {
   const [linkResolved, setLinkResolved] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [language, setLanguage] = useState<Language>(() => {
-    const lang = read<Language>("hzaLanguage", "de");
-    // Older releases could store "ar"; it falls back to German.
-    return ["de", "en", "fr"].includes(lang) ? lang : "de";
+    const stored = read<Language | null>("hzaLanguage", null);
+    // Older releases could store "ar"; only known values are accepted.
+    if (stored && ["de", "en", "fr"].includes(stored)) return stored;
+    // Without a saved choice the device language decides. German stays the
+    // fallback because the collection was introduced in German.
+    const device = (
+      navigator.languages?.[0] ||
+      navigator.language ||
+      ""
+    ).toLowerCase();
+    if (device.startsWith("fr")) return "fr";
+    if (device.startsWith("en")) return "en";
+    return "de";
   });
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     const values = read<unknown>(FAVORITES_STORAGE_KEY, []);
