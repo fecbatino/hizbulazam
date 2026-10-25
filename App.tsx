@@ -21,11 +21,12 @@ import {
   HiddenDuas,
   NOTHING_HIDDEN,
   hideDua,
+  pruneHidden,
   sanitizeHidden,
   setTypeHidden,
   showDua,
 } from "./lib/hidden";
-import { deviceLanguage } from "./lib/language";
+import { initialLanguage, saveLanguageChoice } from "./lib/language";
 import { UI } from "./lib/ui";
 import { DuaCollection, DuaItem, Language } from "./types";
 
@@ -90,13 +91,8 @@ function App() {
   const [jump, setJump] = useState<Jump>(null);
   const [linkResolved, setLinkResolved] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [language, setLanguage] = useState<Language>(() => {
-    const stored = read<Language | null>("hzaLanguage", null);
-    // Older releases could store "ar"; only known values are accepted.
-    if (stored && ["de", "en", "fr"].includes(stored)) return stored;
-    // Without a saved choice the device language or country decides.
-    return deviceLanguage();
-  });
+  // Explicit choice, else device language or country (lib/language.ts).
+  const [language, setLanguage] = useState<Language>(initialLanguage);
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     const values = read<unknown>(FAVORITES_STORAGE_KEY, []);
     return new Set(
@@ -257,6 +253,10 @@ function App() {
     setLinkResolved(true);
   }, [meta, deepLink]);
   useEffect(() => {
+    // Drop hidden ids that a data correction removed, so counts stay true.
+    if (meta) setHidden((previous) => pruneHidden(previous, meta));
+  }, [meta]);
+  useEffect(() => {
     if (day && linkResolved && !pendingDua) setDayHash(day);
   }, [day, linkResolved, pendingDua]);
   useEffect(() => {
@@ -280,10 +280,12 @@ function App() {
       setSettings((previous) => ({ ...previous, ...value })),
     [],
   );
-  const hide = useCallback(
-    (id: string) => setHidden((previous) => hideDua(previous, id)),
-    [],
-  );
+  const hide = useCallback((id: string) => {
+    setHidden((previous) => hideDua(previous, id));
+    // A dua opened via search or link is shown despite being hidden; hiding
+    // it again ends that.
+    setPendingDua((previous) => (previous === id ? null : previous));
+  }, []);
   const show = useCallback(
     (dua: DuaItem) => setHidden((previous) => showDua(previous, dua)),
     [],
@@ -409,11 +411,7 @@ function App() {
               setLanguage(next);
               // Only an explicit choice is stored; otherwise the app keeps
               // following the device language.
-              try {
-                localStorage.setItem("hzaLanguage", JSON.stringify(next));
-              } catch {
-                /* Language still works without persistence. */
-              }
+              saveLanguageChoice(next);
             }}
           />
         </div>
@@ -454,6 +452,7 @@ function App() {
               collection={shown}
               {...cardProps}
               hidden={hidden}
+              reveal={pendingDua}
               onHide={hide}
               onShow={show}
             />

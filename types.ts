@@ -6,7 +6,9 @@ export type NameLanguage = Language | 'ar';
 
 export type DayOfWeek = 'friday' | 'saturday' | 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday';
 
-export type SourceType = 'quran' | 'sahih_hadith' | 'hasan_hadith' | 'weak_hadith' | 'ikhtilaf' | 'later_supplication' | 'unknown';
+/** Single source of truth for source types; settings and storage read it. */
+export const SOURCE_TYPES = ['quran', 'sahih_hadith', 'hasan_hadith', 'weak_hadith', 'ikhtilaf', 'later_supplication', 'unknown'] as const;
+export type SourceType = (typeof SOURCE_TYPES)[number];
 export type GradingValue = 'sahih' | 'hasan' | 'daif' | 'ikhtilaf' | 'unknown';
 
 export interface PrimarySource {

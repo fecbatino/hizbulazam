@@ -1,6 +1,6 @@
-import { Language, SourceType } from "../types";
+import { Language, SOURCE_TYPES, SourceType } from "../types";
 import { useFocusTrap } from "../hooks/useFocusTrap";
-import { HiddenDuas, SOURCE_TYPES } from "../lib/hidden";
+import { HiddenDuas, hasHidden } from "../lib/hidden";
 import { SOURCE_LABEL, UI } from "../lib/ui";
 import { Icon } from "./icons";
 import { OfflineDownload } from "./OfflineDownload";
@@ -176,9 +176,7 @@ export function SettingsModal({
           <button
             className="primary-button"
             onClick={onShowAll}
-            disabled={
-              !hidden.ids.length && !hidden.types.length && !hidden.shown.length
-            }
+            disabled={!hasHidden(hidden)}
           >
             <Icon name="eye" />
             {ui.showAll}
