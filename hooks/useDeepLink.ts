@@ -22,14 +22,23 @@ export function parseHash(hash: string): DeepLink {
   return null;
 }
 
+// Zuletzt empfangener Link (jedes hashchange erzeugt ein neues Objekt). React
+// kann einen Zwischenstand rendern, bevor dieses Update ankommt; solange der
+// gerenderte Link nicht dieser ist, gilt der gerenderte Tag als überholt.
+let latestLink: DeepLink = parseHash(window.location.hash);
+
 /** Liest den Hash beim Start und bei jeder Änderung (Zurück/Vor, geteilte Links). */
 export function useDeepLink(): DeepLink {
-  const [link, setLink] = useState<DeepLink>(() =>
-    parseHash(window.location.hash),
-  );
+  const [link, setLink] = useState<DeepLink>(() => {
+    latestLink = parseHash(window.location.hash);
+    return latestLink;
+  });
 
   useEffect(() => {
-    const handler = () => setLink(parseHash(window.location.hash));
+    const handler = () => {
+      latestLink = parseHash(window.location.hash);
+      setLink(latestLink);
+    };
     window.addEventListener("hashchange", handler);
     return () => window.removeEventListener("hashchange", handler);
   }, []);
@@ -37,8 +46,13 @@ export function useDeepLink(): DeepLink {
   return link;
 }
 
-/** Tageswechsel schreibt den Hash, ohne die History zu fluten. */
-export function setDayHash(day: string): void {
+/**
+ * Tageswechsel schreibt den Hash, ohne die History zu fluten. `renderedLink`
+ * ist der Link, auf dem der aufrufende Render beruht: Ist inzwischen ein
+ * neuerer angekommen, darf der Tag des alten ihn nicht überschreiben.
+ */
+export function setDayHash(day: string, renderedLink: DeepLink): void {
+  if (renderedLink !== latestLink) return;
   const next = `#/day/${encodeURIComponent(day)}`;
   if (window.location.hash !== next) {
     window.history.replaceState(null, "", next);
