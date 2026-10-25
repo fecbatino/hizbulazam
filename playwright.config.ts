@@ -4,7 +4,13 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   timeout: 45000,
-  use: { baseURL: "http://127.0.0.1:4173", trace: "retain-on-failure" },
+  use: {
+    // Die UI startet jetzt in der Geraetesprache; die Tests sind deutsch
+    // geschrieben und brauchen deshalb eine feste Locale.
+    baseURL: "http://127.0.0.1:4173",
+    trace: "retain-on-failure",
+    locale: "de-DE",
+  },
   webServer: {
     command: "npm run preview -- --host 127.0.0.1 --port 4173",
     url: "http://127.0.0.1:4173",
