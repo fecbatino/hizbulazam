@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { DuaCollection, DuaItem, Language } from "../types";
 import { HiddenDuas, isHidden } from "../lib/hidden";
 import { SOURCE_LABEL, UI } from "../lib/ui";
@@ -20,6 +20,8 @@ interface Props {
   onOpen?: (id: string) => void;
   /** Hidden duas render as a slim line that can be shown again. */
   hidden?: HiddenDuas;
+  /** A dua the reader jumped to (search, link) shows even when hidden. */
+  reveal?: string | null;
   onHide?: (id: string) => void;
   onShow?: (dua: DuaItem) => void;
 }
@@ -41,7 +43,7 @@ function Entry({
   isDuaHidden,
 }: Omit<
   Props,
-  "collection" | "favorites" | "numbering" | "total" | "hidden"
+  "collection" | "favorites" | "numbering" | "total" | "hidden" | "reveal"
 > & {
   dua: DuaItem;
   index: number;
@@ -51,6 +53,16 @@ function Entry({
 }) {
   const [status, setStatus] = useState("");
   const t = UI[language];
+  // Hide and show swap the whole subtree; the pressed button disappears.
+  // Focus moves to its counterpart so keyboard and screen-reader users stay
+  // at this dua instead of falling back to the start of the page.
+  const toggle = useRef<HTMLButtonElement>(null);
+  const toggled = useRef(false);
+  useEffect(() => {
+    if (!toggled.current) return;
+    toggled.current = false;
+    toggle.current?.focus({ preventScroll: true });
+  }, [isDuaHidden]);
   const number = showProgress && (
     <span className="dua-number">
       {t.progress} {index + 1} {t.of} {total}
@@ -78,8 +90,12 @@ function Entry({
         </div>
         {onShow && (
           <button
+            ref={toggle}
             className="text-button"
-            onClick={() => onShow(dua)}
+            onClick={() => {
+              toggled.current = true;
+              onShow(dua);
+            }}
             aria-label={`${t.show}: ${t.progress} ${index + 1}`}
           >
             <Icon name="eye" />
@@ -160,8 +176,12 @@ function Entry({
           )}
           {onHide && (
             <button
+              ref={toggle}
               className="icon-button"
-              onClick={() => onHide(dua.id)}
+              onClick={() => {
+                toggled.current = true;
+                onHide(dua.id);
+              }}
               aria-label={t.hide}
             >
               <Icon name="eyeOff" />
@@ -200,6 +220,7 @@ export const DuaCard = React.memo<Props>(function DuaCard({
   numbering,
   total,
   hidden,
+  reveal,
   ...props
 }) {
   return (
@@ -212,7 +233,7 @@ export const DuaCard = React.memo<Props>(function DuaCard({
           total={total ?? collection.duas.length}
           favorite={favorites.has(dua.id)}
           showProgress={showProgress}
-          isDuaHidden={!!hidden && isHidden(hidden, dua)}
+          isDuaHidden={!!hidden && dua.id !== reveal && isHidden(hidden, dua)}
           {...props}
         />
       ))}

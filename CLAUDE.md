@@ -23,11 +23,15 @@ public/fonts/*.woff2             selbst gehostete Schriften (arabic + latin)
 hooks/useCollections.ts          Loader + Modul-Cache für Tagesdaten
 hooks/useDeepLink.ts             #/day/<tag> und #/dua/<id>, Hash-Navigation
 lib/normalize.ts                 Suchnormalisierung (arabische Diakritika, Alef-Formen)
-lib/language.ts                  Startsprache ohne gespeicherte Wahl: Gerätesprachen, dann
-                                 Land (Locale-Region, Zeitzone), sonst Deutsch; nur eine
-                                 ausdrückliche Auswahl wird gespeichert (hzaLanguage)
-lib/hidden.ts                    Ausgeblendete Duas (einzeln/nach Quelle, hzaHiddenDuas);
-                                 bleiben als schmale Zeile mit Anker im Tag, Favoriten zeigen alles
+lib/language.ts                  Startsprache ohne gespeicherte Wahl: Gerätesprache, sonst ihr
+                                 Land (Region, Zeitzone) vor angehängten Sprachen (Chrome hängt
+                                 en-US an), sonst Deutsch. Nur eine ausdrückliche Auswahl wird
+                                 gespeichert (hzaLanguageChoice); das alte automatische
+                                 hzaLanguage wird einmalig migriert ("de" verworfen, en/fr übernommen)
+lib/hidden.ts                    Ausgeblendete Duas (einzeln/nach Quelle, hzaHiddenDuas); bleiben als
+                                 schmale Zeile mit Anker im Tag, Sprungziele (Suche/Link) werden
+                                 trotzdem gezeigt, Favoriten zeigen alles. Quellenarten: SOURCE_TYPES
+                                 in types.ts
 components/SearchModal.tsx       Suche, lädt den Index erst beim Öffnen
 components/ErrorBoundary.tsx     fängt Renderfehler, verhindert weiße Seite
 ```
