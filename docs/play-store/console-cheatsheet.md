@@ -203,6 +203,6 @@ Familienrichtlinie ............................ nein
 
 ## Offene Punkte vor Produktion
 
-- Impressum/Datenschutz: Platzhalter `[Straße und Hausnummer]` und `[PLZ]` füllen.
+- Impressum/Datenschutz: Anschrift eingetragen (26.10.2026).
 - Zielgruppe 13+ wählen, nicht „Kinder".
 - Für EN/FR prüfen, ob Play eine eigene Kurzbeschreibung verlangt (ja, je Sprache).
