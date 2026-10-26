@@ -30,6 +30,17 @@ describe("static pages", () => {
     expect(html).not.toMatch(/\[[A-Za-zÄÖÜäöüß][^\]<]{0,40}\]/);
   });
 
+  // The address on the legal pages exactly as the owner confirmed it.
+  it.each(["datenschutz.html", "impressum.html"])(
+    "%s names the confirmed address",
+    (page) => {
+      const html = readFileSync(join(PUBLIC, page), "utf8");
+      expect(html).toContain("Siegelsdorfer Str. 34");
+      expect(html).toContain("90431");
+      expect(html).not.toContain("Siegellsdorfer");
+    },
+  );
+
   it.each(pages)("%s links only stylesheets that exist", (page) => {
     const html = readFileSync(join(PUBLIC, page), "utf8");
     const links = [...html.matchAll(/<link[^>]+href="\/([^"]+\.css)"/g)];
