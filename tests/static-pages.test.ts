@@ -23,6 +23,13 @@ describe("static pages", () => {
     expect(html).not.toMatch(/\son[a-z]+\s*=/i);
   });
 
+  // Legal pages are published as they are; an unfilled template field such
+  // as "[PLZ]" would make the imprint incomplete (§ 5 DDG).
+  it.each(pages)("%s has no unfilled placeholders", (page) => {
+    const html = readFileSync(join(PUBLIC, page), "utf8");
+    expect(html).not.toMatch(/\[[A-Za-zÄÖÜäöüß][^\]<]{0,40}\]/);
+  });
+
   it.each(pages)("%s links only stylesheets that exist", (page) => {
     const html = readFileSync(join(PUBLIC, page), "utf8");
     const links = [...html.matchAll(/<link[^>]+href="\/([^"]+\.css)"/g)];
