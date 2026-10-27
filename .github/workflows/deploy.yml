@@ -53,7 +53,8 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Browserprüfungen
-        run: npm run test:e2e
+        # Test the real production routing, negotiation and headers as well as UI.
+        run: npm run test:production
 
       - name: Build-Artefakte sichern
         uses: actions/upload-artifact@v4

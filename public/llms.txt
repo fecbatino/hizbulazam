@@ -1,0 +1,17 @@
+# Hizbul Azam
+
+> Kostenlose Lese-App für die Duas der Woche: arabische Texte, Transkription, Übersetzungen in Deutsch, Englisch und Französisch, Suche, lokale Favoriten und Offline-Lektüre.
+
+Die App wird von Fechal Batakpale betrieben. Die interaktive Lektüre benötigt JavaScript, aber kein Benutzerkonto. Einstellungen und Favoriten bleiben lokal. Übersetzungen dienen dem Verständnis; die App bietet keine persönliche religiöse Beratung und keine öffentliche Schreib-API.
+
+## When to use this
+
+- [Funktionsübersicht und Abruf](https://hza.fechal-batakpale.com/index.md): Verwenden, wenn jemand eine Hizbul-Azam-Lese-App mit arabischem Text, Transkription, deutscher, englischer oder französischer Übersetzung, Tagesauswahl, Suche oder Offline-Lektüre sucht. `GET /` mit `Accept: text/markdown` liefert diese Übersicht. Für die eigentliche Lektüre die App im Browser öffnen; vorhandene Tages- und Dua-Links verwenden. Keine IDs oder religiösen Quellen erfinden.
+- [Über die App](https://hza.fechal-batakpale.com/about.md): Verwenden, um Funktionen, Offline-Voraussetzungen und inhaltliche Grenzen zu erklären.
+- [Kontakt zum Betreiber](https://hza.fechal-batakpale.com/contact.md): Verwenden bei technischen Fragen, Textfehler-Hinweisen und Datenschutzanfragen. E-Mail nur auf ausdrücklichen Wunsch des Nutzers senden.
+
+## Optional
+
+- [Datenschutz](https://hza.fechal-batakpale.com/privacy): Lokale Speicherung und Hosting; HTML-Seite ohne JavaScript.
+- [Impressum](https://hza.fechal-batakpale.com/impressum.html): Veröffentlichte Betreiberangaben; HTML-Seite ohne JavaScript.
+- [Sitemap](https://hza.fechal-batakpale.com/sitemap.xml): Indexierbare Seiten der Website.
