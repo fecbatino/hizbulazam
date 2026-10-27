@@ -81,7 +81,9 @@ Push auf main ──► GitHub Actions
   `hizbulazam:80`. Gehärtet: `read_only`, tmpfs für Cache/PID/Temp, `no-new-privileges`,
   `cap_drop: ALL` plus CHOWN/SETUID/SETGID/NET_BIND_SERVICE.
 - `deploy/nginx/default.conf`: `/assets/*` immutable, `index.html`/`sw.js`/Manifest
-  `no-cache`, SPA-Fallback. `/data/*` und `/fonts/*` nur noch für ältere geöffnete Versionen;
+  `no-cache`; unbekannte Pfade liefern echte 404, mit Markdown bei entsprechender Accept-Präferenz.
+  `/` und `/index.html` verhandeln HTML/Markdown; App-Navigation verwendet weiterhin Fragmente.
+  `/data/*` und `/fonts/*` nur noch für ältere geöffnete Versionen;
   der Build liefert sie nicht mehr aus. Das Verzeichnis `deploy/nginx/` wird eingebunden
   (kein Einzeldatei-Mount), damit Git-Updates im Container ankommen.
 - `deploy/nginx/security-headers.inc`: CSP (nur `'self'`), nosniff, Referrer-, Permissions-
@@ -118,8 +120,9 @@ Branch-Namen: `claude/<thema>-<YYYYMMDD>` bzw. `codex/<thema>-<YYYYMMDD>`.
 
 ## Technische Regeln
 
-- Keine externen CDNs oder Fremd-Origins im Produktionsbuild. Prüfen mit:
-  `grep -E 'https?://' dist/index.html` (muss leer sein).
+- Keine extern geladenen Ressourcen oder CDNs im Produktionsbuild. `scripts/check-build.mjs`
+  prüft die Ressourcen-URLs. Absolute Canonical-/Open-Graph-URLs und JSON-LD-Identifikatoren
+  sind Metadaten und dürfen die eigene Domain bzw. das Schema-Vokabular nennen.
 - Keine Secrets im Repo. Im Repo gibt es keine `.env` (nur optional im Server-Stack, ignoriert).
 - Neue Dependencies nur mit Begründung im Commit.
 - Bundle-Größe ist ein Feature: `dist/assets/index-*.js` bleibt unter 40 kB (aktuell ~26 kB);

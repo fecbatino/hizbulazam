@@ -32,10 +32,34 @@ npm run test
 npm run build
 npx playwright install chromium
 npm run test:e2e
+npm run test:production # Docker: echtes Nginx, HTTP-Verträge, alle Build-Dateien, Browser
 npm run preview
 ```
 
 React 19, TypeScript, Vite, Tailwind 4 als PostCSS-Build, Workbox/PWA, Vitest und Playwright. Alle Schriften werden selbst gehostet. Keine Anmeldung, kein Anwendungsbackend, keine externen CDNs.
+
+## Auffindbarkeit für Agenten
+
+Die Startseite enthält eine ohne JavaScript lesbare Einführung, Canonical-/Open-Graph-Metadaten
+und JSON-LD für die App und ihren im Impressum genannten individuellen Betreiber.
+Nginx liefert für `/`, `/index.html`, `/about` und `/contact` je nach `Accept` HTML oder Markdown,
+mit `Vary: Accept`. Qualitätswerte und Wildcards werden berücksichtigt; ohne akzeptable
+Darstellung kommt 406. `/privacy` liefert die bestehende mehrsprachige Datenschutzerklärung.
+Unbekannte Pfade liefern 404 mit einem zur Präferenz passenden HTML-/Markdown-Fehlertext.
+App-Links bleiben Fragmente (`/#/day/...`, `/#/dua/...`).
+Die PWA speichert dafür eine beim Build erzeugte feste HTML-Kopie unter `/offline.html`
+(nicht indexierbar); die verhandelnde Startseite wird nicht als HTML vorgemerkt.
+
+`/llms.txt` beschreibt Einsatzfälle und Abrufwege, `/robots.txt` verweist auf `/sitemap.xml`.
+Bei Inhaltsänderungen die tatsächlichen Änderungsdaten der betroffenen Sitemap-Einträge
+pflegen. Die Markdown-Fassungen der Einführung, Über-uns- und Kontaktseite gemeinsam
+mit den HTML-Fassungen aktualisieren. Nginx-Maps werden mit
+`node scripts/generate-negotiation.mjs` erzeugt und durch einen Reproduzierbarkeitstest geprüft.
+
+`npm run test:production` verwendet das in Compose gepinnte Nginx-Image und prüft alle
+Build-Dateien bytegenau über HTTP sowie die App in Smartphone- und Desktop-Größe.
+Nach einer Veröffentlichung kann `node scripts/check-agent-http.mjs https://hza.fechal-batakpale.com`
+die öffentlichen HTTP-Verträge erneut prüfen. Dafür werden die Entwicklungsabhängigkeiten benötigt.
 
 Die Datenquellen liegen weiterhin in `public/data/*.json`. Arabischer Text, Übersetzungen und Quellen dürfen im Rahmen technischer oder gestalterischer Arbeiten nicht verändert werden. Siehe [CLAUDE.md](./CLAUDE.md).
 

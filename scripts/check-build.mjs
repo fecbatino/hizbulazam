@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
+import { assertLocalResources } from "./local-resources.mjs";
 const root = "dist";
 const files = fs.readdirSync(path.join(root, "assets"));
 const main = files.filter((file) => /^index-.*\.js$/.test(file));
@@ -9,8 +10,7 @@ if (
   fs.statSync(path.join(root, "assets", main[0])).size >= 40000
 )
   throw new Error("Main JS exceeds 40 kB budget");
-if (/https?:\/\//.test(fs.readFileSync(path.join(root, "index.html"), "utf8")))
-  throw new Error("External origin in HTML");
+assertLocalResources(fs.readFileSync(path.join(root, "index.html"), "utf8"));
 const manifest = JSON.parse(
   fs.readFileSync(path.join(root, "manifest.webmanifest"), "utf8"),
 );

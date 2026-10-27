@@ -62,6 +62,9 @@ export default defineConfig({
         const links = path.join(root, "dist/.well-known/assetlinks.json");
         fs.mkdirSync(path.dirname(links), { recursive: true });
         fs.copyFileSync(path.join(root, "public/.well-known/assetlinks.json"), links);
+        // A fixed HTML document for offline navigation: negotiating index.html
+        // varies by Accept and therefore cannot safely share a Workbox cache key.
+        fs.copyFileSync(path.join(root, "dist/index.html"), path.join(root, "dist/offline.html"));
         for (const dir of ["data", "fonts"])
           fs.rmSync(path.join(root, "dist", dir), {
             recursive: true,
@@ -132,8 +135,14 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html}"],
+        // Errors return 404; index varies by Accept. Cache the fixed offline
+        // HTML document instead so Cache.match cannot mix representations.
+        globIgnores: ["**/404.html", "**/index.html"],
         clientsClaim: true,
-        navigateFallback: "/index.html",
+        navigateFallback: "/offline.html",
+        // Only the root is an app route (day/dua navigation uses fragments).
+        // Do not turn unknown paths or informational pages into the app shell.
+        navigateFallbackAllowlist: [/^\/(?:index\.html)?(?:\?|$)/],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {

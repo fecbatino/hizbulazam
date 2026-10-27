@@ -4,8 +4,56 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#1B4332" />
-    <meta name="description" content="Hizbul Azam — die Duas der Woche, arabisch mit Übersetzung, offline verfügbar." />
-    <title>Hizbul Azam</title>
+    <meta name="description" content="Hizbul Azam: Duas der Woche auf Arabisch mit Transkription und Übersetzung in Deutsch, Englisch und Französisch. Kostenlose PWA mit Suche, Favoriten und Offline-Lektüre." />
+    <title>Hizbul Azam — Duas der Woche mit Übersetzung und Offline-Lektüre</title>
+    <link rel="canonical" href="https://hza.fechal-batakpale.com/" />
+    <meta property="og:title" content="Hizbul Azam — Duas der Woche" />
+    <meta property="og:description" content="Arabische Duas mit Transkription und Übersetzung, Suche, Favoriten und Offline-Lektüre." />
+    <meta property="og:url" content="https://hza.fechal-batakpale.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://hza.fechal-batakpale.com/icon-512.png" />
+    <meta property="og:image:alt" content="Hizbul Azam App-Symbol" />
+    <link rel="alternate" type="text/markdown" href="/index.md" />
+    <link rel="describedby" href="/llms.txt" />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://hza.fechal-batakpale.com/#app",
+          "name": "Hizbul Azam",
+          "description": "Duas der Woche auf Arabisch mit Transkription und Übersetzung in Deutsch, Englisch und Französisch, Suche, lokalen Favoriten und Offline-Lektüre.",
+          "url": "https://hza.fechal-batakpale.com/",
+          "applicationCategory": "ReferenceApplication",
+          "operatingSystem": "Web browser",
+          "inLanguage": ["de", "en", "fr", "ar"],
+          "isAccessibleForFree": true,
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+          "publisher": { "@id": "https://hza.fechal-batakpale.com/#publisher" }
+        },
+        {
+          "@type": "Person",
+          "@id": "https://hza.fechal-batakpale.com/#publisher",
+          "name": "Fechal Batakpale",
+          "url": "https://hza.fechal-batakpale.com/contact",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "fecbatino@gmail.com",
+            "contactType": "application support",
+            "availableLanguage": ["de", "en", "fr"]
+          },
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Siegelsdorfer Str. 34",
+            "postalCode": "90431",
+            "addressLocality": "Nürnberg",
+            "addressCountry": "DE"
+          }
+        }
+      ]
+    }
+    </script>
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="preload" href="/fonts/amiri-400-normal-arabic.woff2" as="font" type="font/woff2" crossorigin />
@@ -13,7 +61,20 @@
     <link rel="stylesheet" href="/index.css" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main class="static-intro">
+        <h1>Hizbul Azam — Duas der Woche</h1>
+        <p>Hizbul Azam ist eine kostenlose Lese-App für die tägliche Lektüre der Duas des Hizbul Azam. Die Sammlung ist nach den sieben Wochentagen geordnet. Sie bietet arabische Texte, Transkription und Übersetzungen in Deutsch, Englisch und Französisch sowie die jeweils hinterlegten Quellenangaben.</p>
+        <h2>Lesen, suchen und wiederfinden</h2>
+        <p>In der interaktiven App wählen Sie einen Wochentag, suchen nach einer Dua oder markieren lokale Favoriten. Arabische Schrift und Übersetzung lassen sich unabhängig vergrößern. Die zuletzt gelesene Position wird je Tag auf Ihrem Gerät gespeichert. Ein helles und ein dunkles Farbschema unterstützen die Lektüre.</p>
+        <h2>Offline und ohne Anmeldung</h2>
+        <p>Die App benötigt kein Benutzerkonto. In den Einstellungen können Sie die gesamte Woche mit Schriften für die Offline-Lektüre herunterladen. Favoriten und Einstellungen bleiben im Browser auf Ihrem Gerät. Die interaktiven Lesefunktionen benötigen JavaScript; diese Einführung und die Informationsseiten sind auch ohne JavaScript zugänglich.</p>
+        <p>Die Übersetzungen unterstützen das Verständnis. Für religiöse Einordnung oder die Prüfung einzelner Texte wenden Sie sich bitte an eine qualifizierte Fachperson.</p>
+        <nav aria-label="Informationen zur App">
+          <a href="/about">Über die App</a> · <a href="/contact">Kontakt</a> · <a href="/privacy">Datenschutz</a> · <a href="/impressum.html">Impressum</a>
+        </nav>
+      </main>
+    </div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
