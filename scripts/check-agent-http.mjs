@@ -26,6 +26,8 @@ export async function checkAgentHttp(baseURL) {
     ["text/*;q=0.5, text/html;q=0.1", "md"],
     ['TEXT/MARKDOWN; CHARSET="UTF-8"; Q=1.000', "md"],
     ["text/markdown;charset=iso-8859-1", "none"],
+    ["text/markdown;q=1, text/markdown;charset=utf-8;q=0.5, text/html;q=0.6", "html"],
+    ["text/markdown;charset=utf-8;q=0.5, text/markdown;q=1, text/html;q=0.6", "html"],
     ["application/x-text/markdown", "none"],
     ["text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "html"],
   ];
@@ -71,7 +73,7 @@ export async function checkAgentHttp(baseURL) {
   }
   for (const path of ["/index.md", "/about.md", "/contact.md"]) await get(path, "text/markdown", 200, "text/markdown");
   const llms = (await get("/llms.txt", "text/plain", 200, "text/plain")).text;
-  assert.match(llms, /^# Hizbul Azam\n\n> /);
+  assert.match(llms, /^# Hizbul Azam\r?\n\r?\n> /);
   assert.ok(llms.includes("## When to use this"));
   for (const [, url] of llms.matchAll(/\]\((https:\/\/hza\.fechal-batakpale\.com[^)]+)\)/g)) await get(new URL(url).pathname);
   assert.ok((await get("/robots.txt", "text/plain", 200, "text/plain")).text.includes(origin + "/sitemap.xml"));

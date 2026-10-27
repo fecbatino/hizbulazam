@@ -39,10 +39,10 @@ describe("agent discovery and no-script content", () => {
 
   it("publishes llms.txt in the specified H1/summary/details/H2 file-list format", () => {
     const text = read("public/llms.txt");
-    expect(text).toMatch(/^# Hizbul Azam\n\n> /);
+    expect(text).toMatch(/^# Hizbul Azam\r?\n\r?\n> /);
     expect(text).toContain("## When to use this");
     for (const section of text.split(/^## .+$/m).slice(1)) {
-      for (const line of section.trim().split("\n")) {
+      for (const line of section.trim().split(/\r?\n/)) {
         if (line) expect(line).toMatch(/^- \[[^\]]+\]\(https:\/\/hza\.fechal-batakpale\.com\/[^)]+\)(?:: .+)?$/);
       }
     }
@@ -66,7 +66,7 @@ describe("agent discovery and no-script content", () => {
   });
 
   it("keeps generated nginx negotiation maps reproducible", () => {
-    expect(read("deploy/nginx/negotiation.conf")).toBe(negotiationConfig());
+    expect(read("deploy/nginx/negotiation.conf").replaceAll("\r\n", "\n")).toBe(negotiationConfig());
   });
 
   it("allows identity URLs while requiring fetched resources to stay local", () => {

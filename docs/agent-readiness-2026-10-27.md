@@ -26,7 +26,7 @@ The PWA precaches a build-generated `/offline.html` copy rather than the negotia
 ## Verification
 
 - `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build`.
-- `npm run test:production`: disposable container using the Compose-pinned nginx image; 186 HTTP contract checks, byte-for-byte HTTP checks of all 51 build files, and the full mobile/desktop Playwright suite.
+- `npm run test:production`: disposable container using the Compose-pinned nginx image; 194 HTTP contract checks, byte-for-byte HTTP checks of all 51 build files, and the full mobile/desktop Playwright suite.
 - HTTP checks cover q-values through three decimal places, explicit exclusions, wildcards, unsupported types, uppercase media types, UTF-8 parameters, HEAD, both error representations, all canonical pages, llms.txt links, robots.txt, XML, JSON-LD, manifest and Digital Asset Links.
 - Browser checks cover no-JavaScript content, React replacement, active-service-worker Markdown/406 responses, real 404 navigation, existing reading/navigation/preferences, offline week/search/reload and update behavior.
 - Build verification compares every prayer-data file with its original bytes and checks all offline resource digests, local resource origins and bundle size.

@@ -4,9 +4,9 @@ Bei technischen Fragen zur Hizbul Azam App, Hinweisen auf Darstellungsfehler ode
 
 ## Betreiber und Anschrift
 
-Fechal Batakpale  
-Siegelsdorfer Str. 34  
-90431 Nürnberg  
+Fechal Batakpale\
+Siegelsdorfer Str. 34\
+90431 Nürnberg\
 Deutschland
 
 E-Mail: [fecbatino@gmail.com](mailto:fecbatino@gmail.com)
